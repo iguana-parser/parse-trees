@@ -1,0 +1,7 @@
+/bin/
+/target/
+.idea/workspace.xml
+.idea/tasks.xml
+project
+projectFilesBackup
+.idea_modules
