@@ -37,18 +37,26 @@ import scala.collection.mutable._
 
 trait SPPFVisitor {
   type T
-  def visit(node: SPPFNode): T
+  def visit(node: SPPFNode): Option[T]
 }
 
-trait Id extends SPPFVisitor {
+trait Id {
   val ids = new HashMap[SPPFNode, Int]
   def getId(node: SPPFNode): Int = ids.getOrElseUpdate(node, ids.size)
 }
 
 trait Memoization extends SPPFVisitor {
-  val cache = new HashMap[SPPFNode, T]
+  val cache = new HashMap[SPPFNode, Option[T]]
 
-  override abstract def visit(node: SPPFNode): T = cache.getOrElseUpdate(node, super.visit(node))
+  override abstract def visit(node: SPPFNode): Option[T] = {
+
+    if (!cache.contains(node)) {
+      cache.put(node, None)
+      cache.put(node, super.visit(node))
+    }
+
+    cache.get(node).get
+  }
 }
 
 //trait EBNFList

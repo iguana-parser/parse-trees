@@ -94,17 +94,28 @@ object DummyNode {
 }
 
 abstract class NonterminalOrIntermediateNode(child: PackedNode) extends NonPackedNode {
-  protected  val rest: ListBuffer[T] = ListBuffer.empty
-  def children: Seq[T] = ListBuffer(child) ++ rest
+  protected var rest: ListBuffer[T] = null
+  def children: Seq[T] = if (rest != null) ListBuffer(child) ++ rest else ListBuffer(child)
   def leftExtent: Int = child.leftExtent
   def rightExtent: Int = child.rightExtent
-  def isAmbiguous = !rest.isEmpty
+  def isAmbiguous = rest != null && !rest.isEmpty
 }
 
 abstract class NonterminalNode(val child: PackedNode) extends NonterminalOrIntermediateNode(child) {
   def getValue: Any = ???
 
-  def addPackedNode(slot: Any, child: NonPackedNode) = rest += PackedNode(slot, child)
+  /**
+   * @return true if the second packed node of this nonterminal node is added.
+   *         This is useful for couting the number of ambigous nodes.
+   */
+  def addPackedNode(slot: Any, child: NonPackedNode) =
+    if (rest == null) {
+      rest = ListBuffer(PackedNode(slot, child))
+      true
+    } else {
+      rest += PackedNode(slot, child)
+      false
+    }
 
   override def equals(obj: Any): Boolean = obj match {
     case NonterminalNode(slot, leftExtent, rightExtent, children) =>
@@ -163,7 +174,15 @@ class SeqNonterminalNode(val slot: Any, child: PackedNode) extends NonterminalNo
 class SeqNonterminalNodeWithValue(val slot: Any, child: PackedNode, val value: Any) extends NonterminalNodeWithValue(child, value)
 
 class IntermediateNode(val slot: Any, val child: PackedNode) extends NonterminalOrIntermediateNode(child) {
-  def addPackedNode(slot: Any, leftChild: NonPackedNode, rightChild: NonPackedNode) = rest += PackedNode(slot, leftChild, rightChild)
+
+  def addPackedNode(slot: Any, leftChild: NonPackedNode, rightChild: NonPackedNode): Boolean =
+    if (rest == null) {
+      rest = ListBuffer(PackedNode(slot, leftChild, rightChild))
+      true
+    } else {
+      rest += PackedNode(slot, leftChild, rightChild)
+      false
+    }
 
   override def equals(o: Any): Boolean = o match {
     case IntermediateNode(slot, leftExtent, rightExtent, children) =>

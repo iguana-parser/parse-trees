@@ -23,24 +23,26 @@ class SPPFToDot(input: Input) extends SPPFVisitor with Id {
 
   val sb = new StringBuilder
 
-  def visit(node: SPPFNode): T = node match {
+  def visit(node: SPPFNode): Option[T] = node match {
 
       case n@NonterminalNode(name, leftExtent, rightExtent, children) =>
         val color = if (n.isAmbiguous) "red" else "black"
         sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format(color, name + "," + leftExtent + "," + rightExtent) + "\n"
         children.foreach(c => { visit(c); addEdge(node, c, sb)})
+        None
 
       case n@IntermediateNode(name, leftExtent, rightExtent, children) =>
         val color = if (n.isAmbiguous) "red" else "black"
         sb ++= s"""${getId(node)}""" + RECTANGLE.format(color, name + "," + leftExtent + "," + rightExtent) + "\n"
         children.foreach(c => { visit(c); addEdge(node, c, sb)})
+        None
 
       case TerminalNode(name, leftExtent, rightExtent) =>
           if (leftExtent == rightExtent)
             sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "&epsilon;" + "," + leftExtent) + "\n"
           else
             sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", name + "," + leftExtent + "," + rightExtent + " (\\\"" + input.subString(leftExtent, rightExtent) +  "\\\")") + "\n"
-          return
+          None
 
       case PackedNode(name, pivot, leftChild, rightChild) =>
         sb ++= s"""${getId(node)}""" + CIRCLE.format(name + "," + pivot) + "\n"
@@ -51,6 +53,7 @@ class SPPFToDot(input: Input) extends SPPFVisitor with Id {
           visit(rightChild.get)
           addEdge(node, rightChild.get, sb)
         }
+        None
     }
 
   def addEdge(src: SPPFNode, dst: SPPFNode, sb: StringBuilder) {
