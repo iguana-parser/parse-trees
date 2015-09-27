@@ -77,7 +77,7 @@ trait SPPFNode {
 }
 
 trait NonPackedNode extends SPPFNode {
- 
+
   type T = PackedNode
 
   def isAmbiguous: Boolean
@@ -106,7 +106,7 @@ abstract class NonterminalOrIntermediateNode(child: PackedNode) extends NonPacke
 }
 
 abstract class NonterminalNode(val child: PackedNode) extends NonterminalOrIntermediateNode(child) {
-  def getValue: Any = None
+  def getValue: Any = ???
 
   /**
    * @return true if the second packed node of this nonterminal node is added.
@@ -139,37 +139,28 @@ object NonterminalNode {
 
   import NonterminalNodeType._
 
-  def apply(_head: Any,
-            _slot: Any,
-            _child: NonPackedNode,
-            _value: Option[Any],
-            _ruleType: Option[Any] = None, nodeType: NonterminalNodeType = Basic) =
-
-
-    new NonterminalNode(PackedNode(_slot, _child)) {
-      override def slot: Any = _head
+  def apply(head: Any, slot: Any, child: NonPackedNode, value: Option[Any], ruleType: Option[Any] = None, nodeType: NonterminalNodeType = Basic) = nodeType match {
+    case Basic => value match {
+      case Some(v) => new BasicNonterminalNodeWithValue(head, PackedNode(slot, child), v)
+      case None    => new BasicNonterminalNode(head, PackedNode(slot, child))
     }
-
-//    case Basic => value match {
-//      case Some(v) => new BasicNonterminalNodeWithValue(head, PackedNode(slot, child), v)
-//      case None    => new BasicNonterminalNode(head, PackedNode(slot, child))
-//    }
-//    case Star => value match {
-//      case Some(v) => new StarNonterminalNodeWithValue(head, PackedNode(slot, child), v)
-//      case None    => new StarNonterminalNode(head, PackedNode(slot, child))
-//    }
-//    case Plus => value match {
-//      case Some(v) => new PlusNonterminalNodeWithValue(head, PackedNode(slot, child), v)
-//      case None    => new PlusNonterminalNode(head, PackedNode(slot, child))
-//    }
-//    case Opt => value match {
-//      case Some(v) => new OptNonterminalNodeWithValue(head, PackedNode(slot, child), v)
-//      case None    => new OptNonterminalNode(head, PackedNode(slot, child))
-//    }
-//    case Seq => value match {
-//      case Some(v) => new SeqNonterminalNodeWithValue(head, PackedNode(slot, child), v)
-//      case None    => new SeqNonterminalNode(head, PackedNode(slot, child))
-//    }
+    case Star => value match {
+      case Some(v) => new StarNonterminalNodeWithValue(head, PackedNode(slot, child), v)
+      case None    => new StarNonterminalNode(head, PackedNode(slot, child))
+    }
+    case Plus => value match {
+      case Some(v) => new PlusNonterminalNodeWithValue(head, PackedNode(slot, child), v)
+      case None    => new PlusNonterminalNode(head, PackedNode(slot, child))
+    }
+    case Opt => value match {
+      case Some(v) => new OptNonterminalNodeWithValue(head, PackedNode(slot, child), v)
+      case None    => new OptNonterminalNode(head, PackedNode(slot, child))
+    }
+    case Seq => value match {
+      case Some(v) => new SeqNonterminalNodeWithValue(head, PackedNode(slot, child), v)
+      case None    => new SeqNonterminalNode(head, PackedNode(slot, child))
+    }
+  }
 
   def unapply(n: NonterminalNode): Option[(Any, Int, Int, Seq[PackedNode])]
     = Some((n.slot,  n.child.leftExtent, n.children.last.rightExtent, n.children))
