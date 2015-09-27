@@ -52,9 +52,13 @@ object SPPFNodeFactory {
 
   def createLayoutNode(s: Any, leftExtent: Int, rightExtent: Int) = new LayoutTerminalNode(s, leftExtent, rightExtent)
 
-  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode) = NonterminalNode(head, slot, child, None, Basic)
-  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode, value: Any) = NonterminalNode(head, slot, child, Some(value), Basic)
-  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode, value: Option[Any] = None, nodeType: NonterminalNodeType = Basic) = NonterminalNode(head, slot, child, value, nodeType)
+  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode) = NonterminalNode(head, slot, child, None)
+  def createNonterminalNode(head: Any,
+                            slot: Any,
+                            child: NonPackedNode,
+                            action: Option[Action] = None,
+                            ruleType: Option[Any] = None,
+                            nodeType: NonterminalNodeType = Basic) = NonterminalNode(head, slot, child, action, ruleType, nodeType)
 
   def createIntermediateNode(s: Any, leftChild: NonPackedNode, rightChild: NonPackedNode) = IntermediateNode(s, leftChild, rightChild)
 }
@@ -102,7 +106,7 @@ abstract class NonterminalOrIntermediateNode(child: PackedNode) extends NonPacke
 }
 
 abstract class NonterminalNode(val child: PackedNode) extends NonterminalOrIntermediateNode(child) {
-  def getValue: Any = ???
+  def getValue: Any = None
 
   /**
    * @return true if the second packed node of this nonterminal node is added.
@@ -135,28 +139,37 @@ object NonterminalNode {
 
   import NonterminalNodeType._
 
-  def apply(head: Any, slot: Any, child: NonPackedNode, value: Option[Any], nodeType: NonterminalNodeType = Basic) = nodeType match {
-    case Basic => value match {
-      case Some(v) => new BasicNonterminalNodeWithValue(head, PackedNode(slot, child), v)
-      case None    => new BasicNonterminalNode(head, PackedNode(slot, child))
+  def apply(_head: Any,
+            _slot: Any,
+            _child: NonPackedNode,
+            _value: Option[Any],
+            _ruleType: Option[Any] = None, nodeType: NonterminalNodeType = Basic) =
+
+
+    new NonterminalNode(PackedNode(_slot, _child)) {
+      override def slot: Any = _head
     }
-    case Star => value match {
-      case Some(v) => new StarNonterminalNodeWithValue(head, PackedNode(slot, child), v)
-      case None    => new StarNonterminalNode(head, PackedNode(slot, child))
-    }
-    case Plus => value match {
-      case Some(v) => new PlusNonterminalNodeWithValue(head, PackedNode(slot, child), v)
-      case None    => new PlusNonterminalNode(head, PackedNode(slot, child))
-    }
-    case Opt => value match {
-      case Some(v) => new OptNonterminalNodeWithValue(head, PackedNode(slot, child), v)
-      case None    => new OptNonterminalNode(head, PackedNode(slot, child))
-    }
-    case Seq => value match {
-      case Some(v) => new SeqNonterminalNodeWithValue(head, PackedNode(slot, child), v)
-      case None    => new SeqNonterminalNode(head, PackedNode(slot, child))
-    }
-  }
+
+//    case Basic => value match {
+//      case Some(v) => new BasicNonterminalNodeWithValue(head, PackedNode(slot, child), v)
+//      case None    => new BasicNonterminalNode(head, PackedNode(slot, child))
+//    }
+//    case Star => value match {
+//      case Some(v) => new StarNonterminalNodeWithValue(head, PackedNode(slot, child), v)
+//      case None    => new StarNonterminalNode(head, PackedNode(slot, child))
+//    }
+//    case Plus => value match {
+//      case Some(v) => new PlusNonterminalNodeWithValue(head, PackedNode(slot, child), v)
+//      case None    => new PlusNonterminalNode(head, PackedNode(slot, child))
+//    }
+//    case Opt => value match {
+//      case Some(v) => new OptNonterminalNodeWithValue(head, PackedNode(slot, child), v)
+//      case None    => new OptNonterminalNode(head, PackedNode(slot, child))
+//    }
+//    case Seq => value match {
+//      case Some(v) => new SeqNonterminalNodeWithValue(head, PackedNode(slot, child), v)
+//      case None    => new SeqNonterminalNode(head, PackedNode(slot, child))
+//    }
 
   def unapply(n: NonterminalNode): Option[(Any, Int, Int, Seq[PackedNode])]
     = Some((n.slot,  n.child.leftExtent, n.children.last.rightExtent, n.children))
@@ -242,7 +255,8 @@ trait PackedNode extends SPPFNode {
 
   def pivot = leftChild.rightExtent
   def children: Seq[T] = if (rightChild.isDefined) ListBuffer(leftChild, rightChild.get) else ListBuffer(leftChild)
-  def action: Any => Any = x => x
+  def action: Option[Action] = None
+  def rule: Option[Any] = None
   def hasRightChild: Boolean  = rightChild != null
 
   override def toString = slot + "," + pivot
@@ -258,16 +272,17 @@ trait PackedNode extends SPPFNode {
 }
 
 object PackedNode {
-  def apply(slot: Any, child: NonPackedNode) = new PackedNodeOneChild(slot, child)
-  def apply(slot: Any, leftChild: NonPackedNode, rightChild: NonPackedNode) = new PackedNodeTwoChildren(slot, leftChild, Some(rightChild))
-  def apply(slot: Any, child: NonPackedNode, action: Any => Any) = new PackedNodeOneChildWithAction(slot, child, action)
-  def apply(slot: Any, leftChild: NonPackedNode, rightChild: NonPackedNode, action: Any => Any) = new PackedNodeTwoChildrenWithAction(slot, leftChild, Some(rightChild), action)
+
+  def apply(s: Any, child: NonPackedNode): PackedNode = new PackedNode { override def leftChild = child; override def slot = s }
+  def apply(s: Any, child: NonPackedNode, a: Action): PackedNode = new PackedNode { override def leftChild = child; override def slot = s; override def action = Some(a) }
+  def apply(s: Any, child: NonPackedNode, r: Any): PackedNode = new PackedNode { override def leftChild = child; override def slot = s; override def rule = Some(r) }
+  def apply(s: Any, child: NonPackedNode, a: Action, r: Any): PackedNode = new PackedNode { override def leftChild = child; override def slot = s; override def action = Some(a); override def rule = Some(r) }
+
+  def apply(s: Any, l: NonPackedNode, r: NonPackedNode): PackedNode = new PackedNode { override def leftChild = l; override def slot = s; override def rightChild = Some(r) }
+  def apply(s: Any, l: NonPackedNode, r: NonPackedNode, a: Action): PackedNode = new PackedNode { override def leftChild = l; override def rightChild = Some(r); override def slot = s; override def action = Some(a) }
+  def apply(s: Any, l: NonPackedNode, r: NonPackedNode, _r: Any): PackedNode = new PackedNode { override def leftChild = l; override def rightChild = Some(r); override def slot = s; override def rule = Some(_r) }
+  def apply(s: Any, l: NonPackedNode, r: NonPackedNode, a: Action, _r: Any): PackedNode = new PackedNode { override def leftChild = l; override def rightChild = Some(r); override def slot = s; override def action = Some(a); override def rule = Some(_r) }
 
   def unapply(n: PackedNode): Option[(Any, Int, NonPackedNode, Option[NonPackedNode])]
     = Some((n.slot, n.pivot, n.leftChild, n.rightChild))
 }
-
-class PackedNodeOneChild(val slot: Any, val leftChild: NonPackedNode) extends PackedNode
-class PackedNodeTwoChildren(val slot: Any, val leftChild: NonPackedNode, override val rightChild: Option[NonPackedNode]) extends PackedNode
-class PackedNodeOneChildWithAction(val slot: Any, val leftChild: NonPackedNode, override val action: Any => Any) extends PackedNode
-class PackedNodeTwoChildrenWithAction(val slot: Any, val leftChild: NonPackedNode, override val rightChild: Option[NonPackedNode], override val action: Any => Any) extends PackedNode
