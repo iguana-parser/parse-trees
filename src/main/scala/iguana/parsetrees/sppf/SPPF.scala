@@ -53,6 +53,7 @@ object SPPFNodeFactory {
   def createLayoutNode(s: Any, leftExtent: Int, rightExtent: Int) = new LayoutTerminalNode(s, leftExtent, rightExtent)
 
   def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode) = NonterminalNode(head, slot, child, None)
+  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode, value: Any) = NonterminalNode(head, slot, child, Some(value))
   def createNonterminalNode(head: Any,
                             slot: Any,
                             child: NonPackedNode,
