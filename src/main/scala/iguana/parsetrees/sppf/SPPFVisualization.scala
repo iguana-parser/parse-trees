@@ -49,9 +49,9 @@ class SPPFToDot(input: Input) extends SPPFVisitor with Id {
         visit(leftChild);
         addEdge(node, leftChild, sb)
 
-        if (rightChild.isDefined) {
-          visit(rightChild.get)
-          addEdge(node, rightChild.get, sb)
+        if (rightChild != null) {
+          visit(rightChild)
+          addEdge(node, rightChild, sb)
         }
         None
     }

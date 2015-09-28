@@ -1,11 +1,20 @@
 package iguana.parsetrees.tree
 
+import scala.collection.JavaConverters._
+
 trait Tree
 
 object Tree {
   val epsilon = Epsilon()
-
   def isEpsilon(t: Tree): Boolean = t == epsilon
+}
+
+object TreeFactory {
+  def createRule(ruleType: Any, children: java.util.List[Tree]) = RuleNode(ruleType, children.asScala)
+  def createAmbiguity(children: Set[Tree]) = Amb(children)
+  def createTerminal(value: String) = Terminal(value)
+  def createLayout(t: Tree) = Layout(t)
+  def createEpsilon() = Epsilon()
 }
 
 trait RuleNode extends Tree {

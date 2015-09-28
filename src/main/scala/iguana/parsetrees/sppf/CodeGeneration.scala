@@ -28,8 +28,8 @@ class ToJavaCode extends SPPFVisitor with Id {
 
     case IntermediateNode(name, leftExtent, rightExtent, children) =>
       children.foreach(p => p.children.foreach(visit(_)))
-      sb ++= s"""IntermediateNode node${getId(node)} = createIntermediateNode(registry.getSlot("$name"), node${getId(children.head.leftChild)}, node${getId(children.head.rightChild.get)});\n"""
-      children.tail.foreach(c => sb ++= s"""node${getId(node)}.addPackedNode(registry.getSlot("${c.slot.toString}"), node${getId(c.leftChild)}, node${getId(c.rightChild.get)});\n""")
+      sb ++= s"""IntermediateNode node${getId(node)} = createIntermediateNode(registry.getSlot("$name"), node${getId(children.head.leftChild)}, node${getId(children.head.rightChild)});\n"""
+      children.tail.foreach(c => sb ++= s"""node${getId(node)}.addPackedNode(registry.getSlot("${c.slot.toString}"), node${getId(c.leftChild)}, node${getId(c.rightChild)});\n""")
       None
 
     case TerminalNode(name, leftExtent, rightExtent) =>
