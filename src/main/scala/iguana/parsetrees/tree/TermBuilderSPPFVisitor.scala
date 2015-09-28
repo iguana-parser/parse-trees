@@ -2,7 +2,7 @@ package iguana.parsetrees.tree
 
 import iguana.parsetrees.sppf._
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable._
 
 object TermBuilder {
 
@@ -30,22 +30,33 @@ class TermBuilderSPPFVisitor[U](builder: TreeBuilder[U]) extends SPPFVisitor {
       if (children.size > 1) None
       else {
         val p = children.head
-        Some(builder.nonterminalNode(p.rule, flatten(visit(p.leftChild)), leftExtent, rightExtent))
+        Some(builder.nonterminalNode(p.rule, makeList(visit(p.leftChild)), leftExtent, rightExtent))
       }
 
     case IntermediateNode(slot, leftExtent, rightExtent, children) =>
       if (children.size > 1) None
       else {
         val p = children.head
-        for (x <- visit(p.leftChild); y <- visit(p.rightChild)) yield (x, y)
+        for (x <- visit(p.leftChild); y <- visit(p.rightChild)) yield merge(x, y)
       }
 
     case PackedNode(slot, pivot, leftChild, rightChild) => throw new RuntimeException("Should not come here!")
   }
 
-  def flatten(v: Any): Seq[U] = v match {
+  def merge(x: Any, y: Any) = x match {
+    case l: Buffer[Any] => flatten(l) += y
+    case x              => ListBuffer(x, y)
+  }
+
+  def makeList(v: Any): Buffer[U] = v match {
     case None => ListBuffer()
-    case x => ListBuffer(x).asInstanceOf[Seq[U]]
+    case Some(l: Buffer[U]) => l
+    case Some(x) => ListBuffer(x.asInstanceOf[U])
+  }
+
+  def flatten(ls: Buffer[Any]): Buffer[Any]= ls flatMap {
+    case t: Buffer[Any] =>  flatten(t)
+    case c => List(c)
   }
 
 }
