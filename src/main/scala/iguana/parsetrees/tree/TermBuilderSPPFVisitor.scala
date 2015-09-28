@@ -6,7 +6,7 @@ import scala.collection.mutable._
 
 object TermBuilder {
 
-  def build[T](node: SPPFNode, builder: TreeBuilder[T]): Any =  {
+  def build[T >: Any](node: SPPFNode, builder: TreeBuilder[T]): Any =  {
     val visitor = new TermBuilderSPPFVisitor[T](builder)
     visitor.visit(node) match {
       case Some(v) => v
@@ -16,7 +16,7 @@ object TermBuilder {
 
 }
 
-class TermBuilderSPPFVisitor[U](builder: TreeBuilder[U]) extends SPPFVisitor {
+class TermBuilderSPPFVisitor[U >: Any](builder: TreeBuilder[U]) extends SPPFVisitor {
 
   override type T = Any
 
@@ -27,15 +27,18 @@ class TermBuilderSPPFVisitor[U](builder: TreeBuilder[U]) extends SPPFVisitor {
       else Some(builder.terminalNode(leftExtent, rightExtent))
 
     case NonterminalNode(slot, leftExtent, rightExtent, children) =>
-      if (children.size > 1) None
-      else {
+      if (children.size > 1) { // Ambiguous node
+        println("Ambiguous node!")
+        Some(builder.ambiguityNode(children.flatMap(n => { println(n); visit(n.leftChild) } ).toSet[U], leftExtent, rightExtent))
+      } else {
         val p = children.head
         Some(builder.nonterminalNode(p.rule, makeList(visit(p.leftChild)), leftExtent, rightExtent))
       }
 
     case IntermediateNode(slot, leftExtent, rightExtent, children) =>
-      if (children.size > 1) None
-      else {
+      if (children.size > 1) { // Ambiguous node
+        None
+      } else {
         val p = children.head
         for (x <- visit(p.leftChild); y <- visit(p.rightChild)) yield merge(x, y)
       }
