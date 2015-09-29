@@ -25,26 +25,24 @@
  *
  */
 
-package iguana.parsetrees.sppf
-
+package iguana.parsetrees.visitor
 
 import scala.collection.mutable._
 
-
-trait SPPFVisitor {
+trait Visitor[A] {
   type T
-  def visit(node: SPPFNode): Option[T]
+  def visit(node: A): Option[T]
 }
 
 trait Id {
-  val ids = new HashMap[SPPFNode, Int]
-  def getId(node: SPPFNode): Int = ids.getOrElseUpdate(node, ids.size)
+  val ids = new HashMap[Any, Int]
+  def getId(node: Any): Int = ids.getOrElseUpdate(node, ids.size)
 }
 
-trait Memoization extends SPPFVisitor {
-  val cache = new HashMap[SPPFNode, Option[T]]
+trait Memoization[A] extends Visitor[A] {
+  val cache = new HashMap[A, Option[T]]
 
-  override abstract def visit(node: SPPFNode): Option[T] = {
+  override abstract def visit(node: A): Option[T] = {
 
     if (!cache.contains(node)) {
       cache.put(node, None)

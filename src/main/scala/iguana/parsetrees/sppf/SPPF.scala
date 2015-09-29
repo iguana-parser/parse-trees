@@ -27,9 +27,7 @@
 
 package iguana.parsetrees.sppf
 
-import java.util.function.Consumer
-
-import scala.collection.mutable._
+import scala.collection.mutable.{ListBuffer}
 
 trait Action {
   def apply(a: Any): Any

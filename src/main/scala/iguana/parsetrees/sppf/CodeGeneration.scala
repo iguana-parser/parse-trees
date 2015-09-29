@@ -1,16 +1,18 @@
 package iguana.parsetrees.sppf
 
+import iguana.parsetrees.visitor.{Memoization, Id, Visitor}
+
 object CodeGeneration {
 
   def toJavaCode(node: SPPFNode): String = {
-    val toJavaCode = new ToJavaCode with Memoization
+    val toJavaCode = new ToJavaCode with Memoization[SPPFNode]
     toJavaCode.visit(node)
     toJavaCode.get
   }
 
 }
 
-class ToJavaCode extends SPPFVisitor with Id {
+class ToJavaCode extends Visitor[SPPFNode] with Id {
 
   override type T = Unit
 

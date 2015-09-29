@@ -1,5 +1,6 @@
 package iguana.parsetrees.sppf
 
+import iguana.parsetrees.visitor.{Memoization, Id, Visitor}
 import iguana.utils.input.Input
 import iguana.utils.visualization.GraphVizUtil
 
@@ -9,13 +10,13 @@ import iguana.utils.visualization.GraphVizUtil._
 object SPPFVisualization {
 
   def generate(node: SPPFNode, dir: String, fileName: String, input: Input) {
-    val sppfToDot = new SPPFToDot(input) with Memoization
+    val sppfToDot = new SPPFToDot(input) with Memoization[SPPFNode]
     sppfToDot.visit(node)
     generateGraph(sppfToDot.get, dir, fileName)
   }
 }
 
-class SPPFToDot(input: Input) extends SPPFVisitor with Id {
+class SPPFToDot(input: Input) extends Visitor[SPPFNode] with Id {
 
   type T = Unit
 

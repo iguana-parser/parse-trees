@@ -1,8 +1,9 @@
 package iguana.parsetrees.tree
 
 import iguana.parsetrees.sppf._
+import iguana.parsetrees.visitor.Visitor
 
-import scala.collection.mutable._
+import scala.collection.mutable.{Buffer, ListBuffer, Set}
 
 object TermBuilder {
 
@@ -16,7 +17,7 @@ object TermBuilder {
 
 }
 
-class TermBuilderSPPFVisitor[U](builder: TreeBuilder[U]) extends SPPFVisitor {
+class TermBuilderSPPFVisitor[U](builder: TreeBuilder[U]) extends Visitor[SPPFNode] {
 
   override type T = Any
 
@@ -35,17 +36,21 @@ class TermBuilderSPPFVisitor[U](builder: TreeBuilder[U]) extends SPPFVisitor {
       }
 
     case IntermediateNode(slot, leftExtent, rightExtent, children) =>
-      if (children.size > 1) { // Ambiguous node
-        None
-      } else {
-        val p = children.head
-        for (x <- visit(p.leftChild); y <- visit(p.rightChild)) yield merge(x, y)
-      }
+      if (children.size > 1) // Ambiguous node
+        Some(builder.ambiguityNode(toSet(children.flatMap(n => get(n))), leftExtent, rightExtent))
+      else
+        get(children.head)
 
     case PackedNode(slot, pivot, leftChild, rightChild) => throw new RuntimeException("Should not come here!")
+
   }
 
-  def merge(x: Any, y: Any) = x match {
+  /**
+   * Gets the children of a packed node under intermediate node
+   */
+  def get(p: PackedNode): Option[Buffer[Any]] = for (x <- visit(p.leftChild); y <- visit(p.rightChild)) yield merge(x, y)
+
+  def merge(x: Any, y: Any): Buffer[Any] = x match {
     case l: Buffer[Any] => flatten(l) += y
     case x              => ListBuffer(x, y)
   }
@@ -61,10 +66,10 @@ class TermBuilderSPPFVisitor[U](builder: TreeBuilder[U]) extends SPPFVisitor {
     case c => List(c)
   }
 
-  def toSet(ls: Seq[Any]): Set[AmbCluster[U]] = {
-    val s = Set[AmbCluster[U]]()
-    ls.foreach(e => s += builder.createAmbCluster(e.asInstanceOf[Seq[U]]))
-    s
+  def toSet(ls: Seq[Any]): Set[Branch[U]] = {
+    val setBuilder = Set.newBuilder[Branch[U]]
+    ls.foreach(e => setBuilder += builder.createBranch(e.asInstanceOf[Seq[U]]))
+    setBuilder.result()
   }
 
 }
