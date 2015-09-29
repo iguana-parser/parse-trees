@@ -103,6 +103,7 @@ trait SPPFNode {
   // For compatibility with Java code
   def getLeftExtent = leftExtent
   def getRightExtent = rightExtent
+  def deepEquals(other: SPPFNode): Boolean
 }
 
 trait NonPackedNode extends SPPFNode {
@@ -120,6 +121,8 @@ class DummyNode extends NonPackedNode {
   def rightExtent = -1
   def slot: Any = "$"
   def isAmbiguous = false
+
+  override def deepEquals(other: SPPFNode): Boolean = other == DummyNode.getInstance
 }
 
 object DummyNode {
@@ -153,12 +156,13 @@ abstract class NonterminalNode(val child: PackedNode) extends NonterminalOrInter
       false
     }
 
-  override def equals(obj: Any): Boolean = obj match {
+  def deepEquals(other: SPPFNode): Boolean = other match {
     case NonterminalNode(slot, leftExtent, rightExtent, children) =>
       this.slot == slot &&
       this.leftExtent == leftExtent &&
       this.rightExtent == rightExtent &&
-      this.children == children
+      this.children.zip(children).forall {
+        case (x, y) => x.deepEquals(y) }
     case _ => false
   }
 }
@@ -225,13 +229,12 @@ class IntermediateNode(val slot: Any, val child: PackedNode) extends Nonterminal
       false
     }
 
-  override def equals(o: Any): Boolean = o match {
+  def deepEquals(other: SPPFNode): Boolean = other match {
     case IntermediateNode(slot, leftExtent, rightExtent, children) =>
       slot == this.slot &&
       leftExtent == this.leftExtent &&
       rightExtent == this.rightExtent &&
-      children == this.children
-
+      children.zip(this.children).forall { case (x, y) => x.deepEquals(y) }
     case _ => false
   }
 }
@@ -248,7 +251,7 @@ trait TerminalNode extends NonPackedNode {
   def isAmbiguous = false
   def children = ListBuffer()
 
-  override def equals(o: Any): Boolean = o match {
+  def deepEquals(other: SPPFNode): Boolean = other match {
     case TerminalNode(slot, leftExtent, rightExtent) =>
       slot == this.slot &&
       leftExtent == this.leftExtent &&
@@ -288,12 +291,12 @@ trait PackedNode extends SPPFNode {
 
   override def toString = slot + "," + pivot
 
-  override def equals(o: Any) = o match {
+  def deepEquals(other: SPPFNode): Boolean = other match {
     case PackedNode(slot, pivot, leftChild, rightChild) =>
       slot == this.slot &&
       pivot == this.pivot &&
-      leftChild == this.leftChild &&
-      rightChild == this.rightChild
+      leftChild.deepEquals(this.leftChild) &&
+      (if(rightChild != null) rightChild.deepEquals(this.rightChild) else true)
     case _             => false
   }
 }

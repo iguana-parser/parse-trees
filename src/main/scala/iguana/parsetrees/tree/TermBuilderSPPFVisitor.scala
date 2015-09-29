@@ -6,7 +6,7 @@ import scala.collection.mutable._
 
 object TermBuilder {
 
-  def build[T >: Any](node: SPPFNode, builder: TreeBuilder[T]): Any =  {
+  def build[T](node: SPPFNode, builder: TreeBuilder[T]): Any =  {
     val visitor = new TermBuilderSPPFVisitor[T](builder)
     visitor.visit(node) match {
       case Some(v) => v
@@ -16,7 +16,7 @@ object TermBuilder {
 
 }
 
-class TermBuilderSPPFVisitor[U >: Any](builder: TreeBuilder[U]) extends SPPFVisitor {
+class TermBuilderSPPFVisitor[U](builder: TreeBuilder[U]) extends SPPFVisitor {
 
   override type T = Any
 
@@ -28,8 +28,7 @@ class TermBuilderSPPFVisitor[U >: Any](builder: TreeBuilder[U]) extends SPPFVisi
 
     case NonterminalNode(slot, leftExtent, rightExtent, children) =>
       if (children.size > 1) { // Ambiguous node
-        println("Ambiguous node!")
-        Some(builder.ambiguityNode(children.flatMap(n => { println(n); visit(n.leftChild) } ).toSet[U], leftExtent, rightExtent))
+        Some(builder.ambiguityNode(toSet(children.flatMap(n => visit(n.leftChild))), leftExtent, rightExtent))
       } else {
         val p = children.head
         Some(builder.nonterminalNode(p.rule, makeList(visit(p.leftChild)), leftExtent, rightExtent))
@@ -60,6 +59,12 @@ class TermBuilderSPPFVisitor[U >: Any](builder: TreeBuilder[U]) extends SPPFVisi
   def flatten(ls: Buffer[Any]): Buffer[Any]= ls flatMap {
     case t: Buffer[Any] =>  flatten(t)
     case c => List(c)
+  }
+
+  def toSet(ls: Seq[Any]): Set[AmbCluster[U]] = {
+    val s = Set[AmbCluster[U]]()
+    ls.foreach(e => s += builder.createAmbCluster(e.asInstanceOf[Seq[U]]))
+    s
   }
 
 }
