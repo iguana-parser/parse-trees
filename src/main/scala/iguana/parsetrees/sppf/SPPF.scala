@@ -27,7 +27,7 @@
 
 package iguana.parsetrees.sppf
 
-import scala.collection.mutable.{ListBuffer}
+import scala.collection.mutable.{ListBuffer, Set}
 
 trait Action {
   def apply(a: Any): Any
@@ -101,7 +101,9 @@ trait SPPFNode {
   // For compatibility with Java code
   def getLeftExtent = leftExtent
   def getRightExtent = rightExtent
-  def deepEquals(other: SPPFNode): Boolean
+
+  def deepEquals(other: SPPFNode): Boolean = deepEquals(other, Set())
+  def deepEquals(other: SPPFNode, visited: Set[SPPFNode]): Boolean
 }
 
 trait NonPackedNode extends SPPFNode {
@@ -120,7 +122,7 @@ class DummyNode extends NonPackedNode {
   def slot: Any = "$"
   def isAmbiguous = false
 
-  override def deepEquals(other: SPPFNode): Boolean = other == DummyNode.getInstance
+  override def deepEquals(other: SPPFNode, visited: Set[SPPFNode]): Boolean = other == DummyNode.getInstance
 }
 
 object DummyNode {
@@ -154,14 +156,17 @@ abstract class NonterminalNode(val child: PackedNode) extends NonterminalOrInter
       false
     }
 
-  def deepEquals(other: SPPFNode): Boolean = other match {
-    case NonterminalNode(slot, leftExtent, rightExtent, children) =>
-      this.slot == slot &&
-      this.leftExtent == leftExtent &&
-      this.rightExtent == rightExtent &&
-      this.children.zip(children).forall {
-        case (x, y) => x.deepEquals(y) }
-    case _ => false
+  def deepEquals(other: SPPFNode, visited: Set[SPPFNode]): Boolean = {
+    if (visited.contains(this)) return true else visited += this
+    other match {
+      case NonterminalNode(slot, leftExtent, rightExtent, children) =>
+        this.slot == slot &&
+          this.leftExtent == leftExtent &&
+          this.rightExtent == rightExtent &&
+          this.children.zip(children).forall {
+            case (x, y) => x.deepEquals(y, visited) }
+      case _ => false
+    }
   }
 }
 
@@ -227,13 +232,16 @@ class IntermediateNode(val slot: Any, val child: PackedNode) extends Nonterminal
       false
     }
 
-  def deepEquals(other: SPPFNode): Boolean = other match {
-    case IntermediateNode(slot, leftExtent, rightExtent, children) =>
-      slot == this.slot &&
-      leftExtent == this.leftExtent &&
-      rightExtent == this.rightExtent &&
-      children.zip(this.children).forall { case (x, y) => x.deepEquals(y) }
-    case _ => false
+  def deepEquals(other: SPPFNode, visited: Set[SPPFNode]): Boolean = {
+    if (visited.contains(this)) return true else visited += this
+    other match {
+      case IntermediateNode(slot, leftExtent, rightExtent, children) =>
+        slot == this.slot &&
+          leftExtent == this.leftExtent &&
+          rightExtent == this.rightExtent &&
+          children.zip(this.children).forall { case (x, y) => x.deepEquals(y, visited) }
+      case _ => false
+    }
   }
 }
 
@@ -249,7 +257,7 @@ trait TerminalNode extends NonPackedNode {
   def isAmbiguous = false
   def children = ListBuffer()
 
-  def deepEquals(other: SPPFNode): Boolean = other match {
+  def deepEquals(other: SPPFNode, visited: Set[SPPFNode]): Boolean = other match {
     case TerminalNode(slot, leftExtent, rightExtent) =>
       slot == this.slot &&
       leftExtent == this.leftExtent &&
@@ -289,12 +297,12 @@ trait PackedNode extends SPPFNode {
 
   override def toString = slot + "," + pivot
 
-  def deepEquals(other: SPPFNode): Boolean = other match {
+  def deepEquals(other: SPPFNode, visited: Set[SPPFNode]): Boolean = other match {
     case PackedNode(slot, pivot, leftChild, rightChild) =>
       slot == this.slot &&
       pivot == this.pivot &&
-      leftChild.deepEquals(this.leftChild) &&
-      (if(rightChild != null) rightChild.deepEquals(this.rightChild) else true)
+      leftChild.deepEquals(this.leftChild, visited) &&
+      (if(rightChild != null) rightChild.deepEquals(this.rightChild, visited) else true)
     case _             => false
   }
 }

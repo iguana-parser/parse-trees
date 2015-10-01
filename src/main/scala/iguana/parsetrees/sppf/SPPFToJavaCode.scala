@@ -2,9 +2,9 @@ package iguana.parsetrees.sppf
 
 import iguana.parsetrees.visitor.{Memoization, Id, Visitor}
 
-object CodeGeneration {
+object SPPFToJavaCode {
 
-  def toJavaCode(node: SPPFNode): String = {
+  def get(node: SPPFNode): String = {
     val toJavaCode = new ToJavaCode with Memoization[SPPFNode]
     toJavaCode.visit(node)
     toJavaCode.get

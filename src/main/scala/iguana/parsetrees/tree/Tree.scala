@@ -10,6 +10,8 @@ object TreeFactory {
   def createAmbiguity(children: java.util.Set[Branch[Tree]]) = Amb(children)
   def createBranch(children: java.util.List[Tree]) = TreeBranch(children)
   def createTerminal(value: String) = Terminal(value)
+  def createEpsilon() = Epsilon()
+  def createCycle() = Cycle()
   def createLayout(t: Tree) = Layout(t)
 }
 
@@ -36,4 +38,8 @@ case class Amb(ts: Set[Branch[Tree]]) extends Tree
 case class Terminal(value: String) extends Tree
 
 case class Layout(value: Tree) extends Tree
+
+case class Epsilon() extends Tree
+
+case class Cycle() extends Tree
 

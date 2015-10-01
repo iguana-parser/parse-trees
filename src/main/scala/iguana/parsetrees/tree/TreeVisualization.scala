@@ -40,10 +40,18 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
        sb ++= s"""${getId(node)}""" + DIAMOND.format("red") + "\n"
        branches.foreach(b => { getBranch(b); addEdge(node, b)})
        None
+
+    case Epsilon() =>
+      sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "&epsilon;") + "\n"
+      None
+
+    case Cycle() =>
+      sb ++= s"""${getId(node)}""" + CIRCLE.format("red", "Cycle", "") + "\n"
+      None
   }
 
   def getBranch(b: Branch[Tree]): Unit = {
-    sb ++= s"""${getId(b)}""" + CIRCLE.format("") + "\n"
+    sb ++= s"""${getId(b)}""" + CIRCLE.format("black", "", "") + "\n"
     b.children.foreach(t => { visit(t); addEdge(b, t) } )
   }
 

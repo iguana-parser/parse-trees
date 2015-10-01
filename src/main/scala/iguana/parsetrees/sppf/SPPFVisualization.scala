@@ -46,7 +46,7 @@ class SPPFToDot(input: Input) extends Visitor[SPPFNode] with Id {
           None
 
       case PackedNode(name, pivot, leftChild, rightChild) =>
-        sb ++= s"""${getId(node)}""" + CIRCLE.format(name + "," + pivot) + "\n"
+        sb ++= s"""${getId(node)}""" + CIRCLE.format("black", "", name + "," + pivot) + "\n"
         visit(leftChild);
         addEdge(node, leftChild, sb)
 

@@ -11,14 +11,12 @@ trait Branch[T] {
 }
 
 trait TreeBuilder[T] {
-
   def terminalNode(l: Int, r: Int): T
-
   def nonterminalNode(ruleType: Any, children: Seq[T], l: Int, r: Int): T
-
   def ambiguityNode(children: Set[Branch[T]], l:Int, r:Int): T
-
-  def createBranch(children: Seq[T]): Branch[T]
+  def branch(children: Seq[T]): Branch[T]
+  def cycle(): T
+  def epsilon(): T
 }
 
 object TreeBuilderFactory {
@@ -34,5 +32,9 @@ class DefaultTreeBuilder(input: Input) extends  TreeBuilder[Tree] {
 
   override def ambiguityNode(children: Set[Branch[Tree]], l: Int, r: Int): Tree = Amb(children)
 
-  override def createBranch(children: Seq[Tree]): Branch[Tree] = TreeBranch(children)
+  override def branch(children: Seq[Tree]): Branch[Tree] = TreeBranch(children)
+
+  override def cycle() = Cycle()
+
+  override def epsilon(): Tree = Epsilon()
 }

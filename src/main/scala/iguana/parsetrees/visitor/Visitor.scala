@@ -45,7 +45,7 @@ trait Memoization[A] extends Visitor[A] {
   override abstract def visit(node: A): Option[T] = {
 
     if (!cache.contains(node)) {
-      cache.put(node, None)
+      cache.put(node, Some(null.asInstanceOf[T]))
       cache.put(node, super.visit(node))
     }
 
