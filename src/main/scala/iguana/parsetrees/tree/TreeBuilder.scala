@@ -8,6 +8,8 @@ import scala.collection.mutable.Set
  */
 trait Branch[T] {
   def children: Seq[T]
+  def leftExtent: Int
+  def rightExtent: Int
 }
 
 trait TreeBuilder[T] {
@@ -16,7 +18,7 @@ trait TreeBuilder[T] {
   def ambiguityNode(children: Set[Branch[T]], l:Int, r:Int): T
   def branch(children: Seq[T]): Branch[T]
   def cycle(): T
-  def epsilon(): T
+  def epsilon(i: Int): T
 }
 
 object TreeBuilderFactory {
@@ -25,7 +27,7 @@ object TreeBuilderFactory {
 
 class DefaultTreeBuilder(input: Input) extends  TreeBuilder[Tree] {
 
-  override def terminalNode(l: Int, r: Int): Tree = Terminal(input.subString(l, r))
+  override def terminalNode(l: Int, r: Int): Tree = Terminal(l, r)
 
   //  def layoutNode(s: Any, l: Int, r: Int): T
   override def nonterminalNode(ruleType: Any, children: Seq[Tree], l: Int, r: Int): Tree = RuleNode(ruleType, children)
@@ -36,5 +38,5 @@ class DefaultTreeBuilder(input: Input) extends  TreeBuilder[Tree] {
 
   override def cycle() = Cycle()
 
-  override def epsilon(): Tree = Epsilon()
+  override def epsilon(i: Int): Tree = Epsilon(i)
 }

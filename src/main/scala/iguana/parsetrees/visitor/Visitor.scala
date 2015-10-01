@@ -40,15 +40,18 @@ trait Id {
 }
 
 trait Memoization[A] extends Visitor[A] {
+
   val cache = new HashMap[A, Option[T]]
 
   override abstract def visit(node: A): Option[T] = {
 
     if (!cache.contains(node)) {
       cache.put(node, Some(null.asInstanceOf[T]))
-      cache.put(node, super.visit(node))
+      val v = super.visit(node)
+      cache.put(node, v)
+      return v
+    } else {
+      cache.get(node).get
     }
-
-    cache.get(node).get
   }
 }

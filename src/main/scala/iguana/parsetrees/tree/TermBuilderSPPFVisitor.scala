@@ -27,7 +27,7 @@ class TermBuilderSPPFVisitor[U](builder: TreeBuilder[U]) extends Visitor[SPPFNod
   override def visit(node: SPPFNode): Option[T] = node match {
 
     case TerminalNode(slot, leftExtent, rightExtent) =>
-      if (leftExtent == rightExtent) Some(builder.epsilon())
+      if (leftExtent == rightExtent) Some(builder.epsilon(leftExtent))
       else Some(builder.terminalNode(leftExtent, rightExtent))
 
     case NonterminalNode(slot, leftExtent, rightExtent, children) =>

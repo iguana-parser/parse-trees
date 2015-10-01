@@ -9,15 +9,15 @@ import scala.collection.mutable.{Set, StringBuilder}
 
 object TreeToJavaCode {
 
-  def get(node: Tree): String = {
-    val treeToJavaCode = new ToJavaCode() with Memoization[Tree]
+  def get(node: Tree, input: Input): String = {
+    val treeToJavaCode = new ToJavaCode(input) with Memoization[Tree]
     treeToJavaCode.visit(node)
     treeToJavaCode.get
   }
 
 }
 
-class ToJavaCode() extends Visitor[Tree] with Id {
+class ToJavaCode(val input: Input) extends Visitor[Tree] with Id {
 
   type T = Unit
 
@@ -27,8 +27,8 @@ class ToJavaCode() extends Visitor[Tree] with Id {
 
   override def visit(node: Tree): Option[Unit] = node match {
 
-    case Terminal(name) =>
-      sb ++= s"""Tree t${getId(node)} = createTerminal("$name");\n"""
+    case Terminal(i, j) =>
+      sb ++= s"""Tree t${getId(node)} = createTerminal($i, $j);\n"""
       None
 
     case RuleNode(r, children) =>
@@ -43,8 +43,8 @@ class ToJavaCode() extends Visitor[Tree] with Id {
        sb ++= s"""Tree t${getId(node)} = createAmbiguity(set($label));\n"""
        None
 
-    case Epsilon() =>
-      sb ++= s"""Tree t${getId(node)} = createEpsilon();\n"""
+    case Epsilon(i) =>
+      sb ++= s"""Tree t${getId(node)} = createEpsilon($i);\n"""
       None
 
     case Cycle() =>

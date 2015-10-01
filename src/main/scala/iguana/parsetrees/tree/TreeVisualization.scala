@@ -27,8 +27,8 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
 
   override def visit(node: Tree): Option[Unit] = node match {
 
-    case Terminal(name) =>
-      sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", name) + "\n"
+    case Terminal(i, j) =>
+      sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", input.subString(i, j)) + "\n"
       None
 
     case RuleNode(r, children) =>
@@ -41,7 +41,7 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
        branches.foreach(b => { getBranch(b); addEdge(node, b)})
        None
 
-    case Epsilon() =>
+    case Epsilon(i) =>
       sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "&epsilon;") + "\n"
       None
 
