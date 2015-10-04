@@ -5,7 +5,8 @@ import iguana.parsetrees.visitor.{Memoization, Id, Visitor}
 import iguana.utils.input.Input
 import iguana.utils.visualization.GraphVizUtil._
 
-import scala.collection.mutable.{Set, StringBuilder}
+import scala.collection.mutable.StringBuilder
+import scala.collection.immutable.Set
 
 object TreeVisualization {
 
@@ -48,6 +49,28 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
     case Cycle() =>
       sb ++= s"""${getId(node)}""" + CIRCLE.format("red", "Cycle", "") + "\n"
       None
+
+    case Star(children) =>
+      sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "*") + "\n"
+      children.foreach(c => { visit(c); addEdge(node, c)})
+      None
+
+    case Plus(children) =>
+      sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "+") + "\n"
+      children.foreach(c => { visit(c); addEdge(node, c)})
+      None
+
+    case Group(children) =>
+      sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "()") + "\n"
+      children.foreach(c => { visit(c); addEdge(node, c)})
+      None
+
+    case Opt(child) =>
+      sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "?") + "\n"
+      visit(child)
+      addEdge(node, child)
+      None
+
   }
 
   def getBranch(b: Branch[Tree]): Unit = {

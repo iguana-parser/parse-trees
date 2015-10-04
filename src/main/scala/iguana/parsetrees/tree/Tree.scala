@@ -1,7 +1,7 @@
 package iguana.parsetrees.tree
 
 import scala.collection.convert.wrapAsScala._
-import scala.collection.mutable.Set
+import scala.collection.immutable.Set
 
 trait Tree {
   def leftExtent: Int
@@ -10,12 +10,16 @@ trait Tree {
 
 object TreeFactory {
   def createRule(ruleType: Any, children: java.util.List[Tree]) = RuleNode(ruleType, children)
-  def createAmbiguity(children: java.util.Set[Branch[Tree]]) = Amb(children)
+  def createAmbiguity(children: java.util.Set[Branch[Tree]]) = Amb(children.toSet)
   def createBranch(children: java.util.List[Tree]) = TreeBranch(children)
   def createTerminal(leftExtent: Int, rightExtent:Int) = Terminal(leftExtent, rightExtent)
   def createEpsilon(i: Int) = Epsilon(i)
   def createCycle() = Cycle()
   def createLayout(t: Tree) = Layout(t)
+  def createStar(children: java.util.List[Tree]) = Star(children)
+  def createPlus(children: java.util.List[Tree]) = Plus(children)
+  def createGroup(children: java.util.List[Tree]) = Group(children)
+  def createOpt(child: Tree) = Opt(child)
 }
 
 trait RuleNode extends Tree {
@@ -62,4 +66,25 @@ case class Cycle() extends Tree {
   override def leftExtent = throw new RuntimeException("Should not be called!")
   override def rightExtent = throw new RuntimeException("Should not be called!")
 }
+
+case class Star(children: Seq[Tree]) extends Tree {
+  override def leftExtent = children.head.leftExtent
+  override def rightExtent = children.last.rightExtent
+}
+
+case class Plus(children: Seq[Tree]) extends Tree {
+  override def leftExtent = children.head.leftExtent
+  override def rightExtent = children.last.rightExtent
+}
+
+case class Group(children: Seq[Tree]) extends Tree {
+  override def leftExtent = children.head.leftExtent
+  override def rightExtent = children.last.rightExtent
+}
+
+case class Opt(child: Tree) extends Tree {
+  override def leftExtent = child.leftExtent
+  override def rightExtent = child.rightExtent
+}
+
 

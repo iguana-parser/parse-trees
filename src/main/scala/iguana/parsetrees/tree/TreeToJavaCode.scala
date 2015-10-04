@@ -3,9 +3,10 @@ package iguana.parsetrees.tree
 
 import iguana.parsetrees.visitor.{Memoization, Id, Visitor}
 import iguana.utils.input.Input
-import iguana.utils.visualization.GraphVizUtil._
 
-import scala.collection.mutable.{Set, StringBuilder}
+import scala.collection.mutable.StringBuilder
+import scala.collection.immutable.Set
+
 
 object TreeToJavaCode {
 
@@ -49,6 +50,28 @@ class ToJavaCode(val input: Input) extends Visitor[Tree] with Id {
 
     case Cycle() =>
       sb ++= s"""Tree t${getId(node)} = createCycle();\n"""
+      None
+
+    case Star(children) =>
+      children.foreach(visit(_))
+      val label = "list(" + children.map(c => "t" + getId(c)).mkString(", ") + ")"
+      sb ++= s"""Tree t${getId(node)} = createStar($label);\n"""
+      None
+
+    case Plus(children) =>
+      children.foreach(visit(_))
+      val label = "list(" + children.map(c => "t" + getId(c)).mkString(", ") + ")"
+      sb ++= s"""Tree t${getId(node)} = createPlus($label);\n"""
+      None
+
+    case Group(children) =>
+      children.foreach(visit(_))
+      val label = "list(" + children.map(c => "t" + getId(c)).mkString(", ") + ")"
+      sb ++= s"""Tree t${getId(node)} = createGroup($label);\n"""
+      None
+
+    case Opt(child) =>
+      sb ++= s"""Tree t${getId(node)} = createStar(t${getId(child)});\n"""
       None
   }
 }
