@@ -30,7 +30,9 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
 
     case TerminalNode(slot, leftExtent, rightExtent) =>
       if (leftExtent == rightExtent) Some(builder.epsilon(leftExtent))
-      else Some(builder.terminalNode(leftExtent, rightExtent))
+      else
+        if (slot.terminalName == null) Some(builder.terminalNode(leftExtent, rightExtent))
+        else Some(builder.terminalNode(slot.terminalName, leftExtent, rightExtent))
 
     case n@BasicNonterminalNode(slot, child) =>
       if (n.isAmbiguous) {

@@ -28,7 +28,7 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
 
   override def visit(node: Tree): Option[Unit] = node match {
 
-    case Terminal(i, j) =>
+    case Terminal(name, i, j) =>
       sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", input.subString(i, j)) + "\n"
       None
 

@@ -14,6 +14,7 @@ trait Branch[T] {
 
 trait TreeBuilder[T] {
   def terminalNode(l: Int, r: Int): T
+  def terminalNode(name: String, l: Int, r: Int): T
   def nonterminalNode(ruleType: Any, children: Seq[T], l: Int, r: Int): T
   def ambiguityNode(children: Iterable[Branch[T]], l:Int, r:Int): T
   def branch(children: Seq[T]): Branch[T]
@@ -35,6 +36,8 @@ class DefaultTreeBuilder(input: Input) extends TreeBuilder[Tree] {
 
   override def terminalNode(l: Int, r: Int): Tree = Terminal(l, r)
 
+  override def terminalNode(name: String, l: Int, r: Int): Tree = Terminal(name, l, r)
+
   //  def layoutNode(s: Any, l: Int, r: Int): T
   override def nonterminalNode(ruleType: Any, children: Seq[Tree], l: Int, r: Int): Tree = RuleNode(ruleType, children)
 
@@ -53,4 +56,5 @@ class DefaultTreeBuilder(input: Input) extends TreeBuilder[Tree] {
   override def group(children: Seq[Tree]): Tree = Group(children)
 
   override def opt(child: Tree): Tree = Opt(child)
+
 }

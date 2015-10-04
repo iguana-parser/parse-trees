@@ -28,7 +28,7 @@ class ToJavaCode(val input: Input) extends Visitor[Tree] with Id {
 
   override def visit(node: Tree): Option[Unit] = node match {
 
-    case Terminal(i, j) =>
+    case Terminal(name, i, j) =>
       sb ++= s"""Tree t${getId(node)} = createTerminal($i, $j);\n"""
       None
 

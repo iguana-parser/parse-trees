@@ -27,11 +27,14 @@
 
 package iguana.parsetrees.sppf
 
+import iguana.parsetrees.slot.TerminalSlot
+
 import scala.collection.mutable.{ListBuffer, Set}
 
 trait Action {
   def apply(a: Any): Any
 }
+
 
 object NonterminalNodeType {
 
@@ -44,14 +47,6 @@ object NonterminalNodeType {
   val Seq   = 4
 }
 
-object TerminalNodeType {
-
-  type TerminalNodeType = Int
-
-  val Basic = 0
-  val Layout = 1
-}
-
 /**
  * Utility class for creating SPPF nodes from Java
  */
@@ -59,11 +54,9 @@ object SPPFNodeFactory {
 
   import NonterminalNodeType._
 
-  def createTerminalNode(s: Any, leftExtent: Int, rightExtent: Int) = new BasicTerminalNode(s, leftExtent, rightExtent)
+  def createTerminalNode(s: Any, leftExtent: Int, rightExtent: Int) = new TerminalNode(s.asInstanceOf[TerminalSlot], leftExtent, rightExtent)
 
   def createEpsilonNode(s: Any, index: Int) = createTerminalNode(s, index, index)
-
-  def createLayoutNode(s: Any, leftExtent: Int, rightExtent: Int) = new LayoutTerminalNode(s, leftExtent, rightExtent)
 
   def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode, value: Any)
       = NonterminalNode(head, slot, child, Basic, null, null, null)
@@ -211,7 +204,6 @@ case class OptNonterminalNode(val slot: Any, override val child: PackedNode) ext
 case class GroupNonterminalNode(val slot: Any, override val child: PackedNode) extends NonterminalNode(child)
 
 
-
 class IntermediateNode(val slot: Any, val child: PackedNode) extends NonterminalOrIntermediateNode(child) {
 
   def addPackedNode(slot: Any, leftChild: NonPackedNode, rightChild: NonPackedNode): Boolean =
@@ -244,7 +236,7 @@ object IntermediateNode {
     = Some((n.slot, n.child.leftExtent, n.child.rightExtent, n.children))
 }
 
-trait TerminalNode extends NonPackedNode {
+case class TerminalNode(val slot: TerminalSlot, val leftExtent: Int, val rightExtent: Int) extends NonPackedNode {
   def isAmbiguous = false
   def children = ListBuffer()
 
@@ -256,22 +248,6 @@ trait TerminalNode extends NonPackedNode {
     case _ => false
   }
 }
-
-object TerminalNode {
-
-  import TerminalNodeType._
-
-  def apply(slot: Any, leftExtent: Int, rightExtent: Int, nodeType: TerminalNodeType = Basic) = new BasicTerminalNode(slot, leftExtent, rightExtent)
-
-  def unapply(n: TerminalNode): Option[(Any, Int, Int)] = Some((n.slot, n.leftExtent, n.rightExtent))
-}
-
-class BasicTerminalNode(val slot: Any, val leftExtent: Int, val rightExtent: Int) extends TerminalNode {
-	def this(c:Char, inputIndex: Int) = this(c + "", inputIndex, inputIndex + 1)
-}
-
-class LayoutTerminalNode(val slot: Any, val leftExtent: Int, val rightExtent: Int) extends TerminalNode
-
 
 trait PackedNode extends SPPFNode {
   type T = NonPackedNode

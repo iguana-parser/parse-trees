@@ -50,7 +50,11 @@ case class Amb(ts: Set[Branch[Tree]]) extends Tree {
   override def rightExtent: Int = ts.head.rightExtent
 }
 
-case class Terminal(leftExtent: Int, rightExtent: Int) extends Tree
+case class Terminal(name: String, leftExtent: Int, rightExtent: Int) extends Tree
+
+object Terminal {
+  def apply(leftExtent: Int, rightExtent: Int): Terminal = Terminal("DEFAULT", leftExtent, rightExtent)
+}
 
 case class Layout(t: Tree) extends Tree {
   override def leftExtent = t.leftExtent
@@ -86,5 +90,4 @@ case class Opt(child: Tree) extends Tree {
   override def leftExtent = child.leftExtent
   override def rightExtent = child.rightExtent
 }
-
 
