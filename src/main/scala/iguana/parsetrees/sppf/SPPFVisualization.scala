@@ -26,9 +26,12 @@ class SPPFToDot(input: Input) extends Visitor[SPPFNode] with Id {
 
   def visit(node: SPPFNode): Option[T] = node match {
 
-      case n@NonterminalNode(name, leftExtent, rightExtent, children) =>
+      case n:NonterminalNode =>
+        val children = n.children
+        val name = n.name
+        val slot = n.slot
         val color = if (n.isAmbiguous) "red" else "black"
-        sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format(color, name + "," + leftExtent + "," + rightExtent) + "\n"
+        sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format(color, name + "," + n.leftExtent + "," + n.rightExtent) + "\n"
         children.foreach(c => { visit(c); addEdge(node, c, sb)})
         None
 

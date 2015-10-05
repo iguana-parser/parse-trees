@@ -2,7 +2,7 @@ package iguana.parsetrees.tree
 
 import iguana.parsetrees.sppf._
 import iguana.parsetrees.visitor.{Memoization, Visitor}
-
+import iguana.parsetrees.slot.NonterminalNodeType
 import scala.collection.mutable.{Buffer, Set}
 
 object TermBuilder {
@@ -34,29 +34,18 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
         if (slot.terminalName == null) Some(builder.terminalNode(leftExtent, rightExtent))
         else Some(builder.terminalNode(slot.terminalName, leftExtent, rightExtent))
 
-    case n@BasicNonterminalNode(slot, child) =>
+    case n@NonterminalNode(slot, child) =>
       if (n.isAmbiguous) {
         Some(builder.ambiguityNode(n.children.map(p => builder.branch(getP1(p))), n.leftExtent, n.rightExtent))
       } else {
-        val p = n.children.head
-        Some(builder.nonterminalNode(p.rule, getP1(p), n.leftExtent, n.rightExtent))
+        n.slot.nodeType match {
+          case NonterminalNodeType.Basic => Some(builder.nonterminalNode(child.rule, getP1(child), n.leftExtent, n.rightExtent))
+          case NonterminalNodeType.Star  => Some(StarList(makeList2(visit(child.leftChild))))
+          case NonterminalNodeType.Plus  => Some(PlusList(makeList2(visit(child.leftChild))))
+          case NonterminalNodeType.Opt   => Some(OptList(makeList2(visit(child.leftChild))))
+          case NonterminalNodeType.Seq => Some(GroupList(makeList2(visit(child.leftChild))))
+        }
       }
-
-    case n@StarNonterminalNode(slot, child) =>
-      if (n.isAmbiguous) Some(builder.ambiguityNode(n.children.map(p => builder.branch(getP1(p))), n.leftExtent, n.rightExtent))
-      else Some(StarList(makeList2(visit(child.leftChild))))
-
-    case n@PlusNonterminalNode(slot, child) =>
-      if (n.isAmbiguous) Some(builder.ambiguityNode(n.children.map(p => builder.branch(getP1(p))), n.leftExtent, n.rightExtent))
-      else Some(PlusList(makeList2(visit(child.leftChild))))
-
-    case n@OptNonterminalNode(slot, child) =>
-      if (n.isAmbiguous) Some(builder.ambiguityNode(n.children.map(p => builder.branch(getP1(p))), n.leftExtent, n.rightExtent))
-      else Some(OptList(makeList2(visit(child.leftChild))))
-
-    case n@GroupNonterminalNode(slot, child) =>
-      if (n.isAmbiguous) Some(builder.ambiguityNode(n.children.map(p => builder.branch(getP1(p))), n.leftExtent, n.rightExtent))
-      else Some(GroupList(makeList2(visit(child.leftChild))))
 
     case IntermediateNode(slot, leftExtent, rightExtent, children) =>
       if (children.size > 1) // Ambiguous node

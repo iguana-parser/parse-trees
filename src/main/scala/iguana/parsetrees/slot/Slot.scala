@@ -1,15 +1,34 @@
 
 package iguana.parsetrees.slot
 
-import iguana.parsetrees.sppf.NonterminalNodeType.NonterminalNodeType
+object NonterminalNodeType {
+
+  type NonterminalNodeType = Int
+
+  val Basic = 0
+  val Star  = 1
+  val Plus  = 2
+  val Opt   = 3
+  val Seq   = 4
+}
+
+import NonterminalNodeType._
 
 trait Slot
 
-trait NonterminalSlot extends Slot {
+trait EndSlot extends Slot {
   def ruleType: Any
-  def nodeType: NonterminalNodeType
+  def action: Action
 }
 
 trait TerminalSlot extends Slot {
   def terminalName: String
+}
+
+trait NonterminalSlot extends Slot {
+  def nodeType: NonterminalNodeType
+}
+
+trait Action {
+  def apply(a: Any): Any
 }

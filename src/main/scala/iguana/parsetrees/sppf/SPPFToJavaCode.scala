@@ -22,7 +22,10 @@ class ToJavaCode extends Visitor[SPPFNode] with Id {
 
   def visit(node: SPPFNode): Option[T] = node match {
 
-    case NonterminalNode(name, leftExtent, rightExtent, children) =>
+    case n:NonterminalNode =>
+      val children = n.children
+      val name = n.name
+      val slot = n.slot
       children.foreach(p => p.children.foreach(visit(_)))
       sb ++= s"""NonterminalNode node${getId(node)} = createNonterminalNode(registry.getSlot("$name"), registry.getSlot("${children.head.slot.toString}"), node${getId(children.head.leftChild)});\n"""
       children.tail.foreach(c => sb ++= s"""node${getId(node)}.addPackedNode(registry.getSlot("${c.slot.toString}"), node${getId(c.leftChild)});\n""")

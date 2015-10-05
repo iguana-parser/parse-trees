@@ -27,48 +27,25 @@
 
 package iguana.parsetrees.sppf
 
-import iguana.parsetrees.slot.TerminalSlot
+import iguana.parsetrees.slot._
 
 import scala.collection.mutable.{ListBuffer, Set}
 
-trait Action {
-  def apply(a: Any): Any
-}
-
-
-object NonterminalNodeType {
-
-  type NonterminalNodeType = Int
-
-  val Basic = 0
-  val Star  = 1
-  val Plus  = 2
-  val Opt   = 3
-  val Seq   = 4
-}
 
 /**
  * Utility class for creating SPPF nodes from Java
  */
 object SPPFNodeFactory {
 
-  import NonterminalNodeType._
-
   def createTerminalNode(s: Any, leftExtent: Int, rightExtent: Int) = new TerminalNode(s.asInstanceOf[TerminalSlot], leftExtent, rightExtent)
 
   def createEpsilonNode(s: Any, index: Int) = createTerminalNode(s, index, index)
 
-  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode, value: Any)
-      = NonterminalNode(head, slot, child, Basic, null, null, null)
-
   def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode)
-  = NonterminalNode(head, slot, child, Basic, null, null)
+      = NonterminalNode(head.asInstanceOf[NonterminalSlot], slot.asInstanceOf[EndSlot], child)
 
-  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode, nodeType: NonterminalNodeType, value: Any, action: Action, ruleType: Any)
-      = NonterminalNode(head, slot, child, nodeType, value, action, ruleType)
-
-  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode, nodeType: NonterminalNodeType, action: Action, ruleType: Any)
-      = NonterminalNode(head, slot, child, nodeType, action, ruleType)
+  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode, value: Any)
+      = NonterminalNode(head.asInstanceOf[NonterminalSlot], slot.asInstanceOf[EndSlot], child, value)
 
   def createIntermediateNode(s: Any, leftChild: NonPackedNode, rightChild: NonPackedNode) = IntermediateNode(s, leftChild, rightChild)
 }
@@ -120,7 +97,7 @@ abstract class NonterminalOrIntermediateNode(child: PackedNode) extends NonPacke
   def isAmbiguous = rest != null && !rest.isEmpty
 }
 
-abstract class NonterminalNode(val child: PackedNode) extends NonterminalOrIntermediateNode(child) {
+class NonterminalNode(val slot: NonterminalSlot, val child: PackedNode) extends NonterminalOrIntermediateNode(child) {
 
   def getValue: Any = null
 
@@ -142,67 +119,36 @@ abstract class NonterminalNode(val child: PackedNode) extends NonterminalOrInter
   def deepEquals(other: SPPFNode, visited: Set[SPPFNode]): Boolean = {
     if (visited.contains(this)) return true else visited += this
     other match {
-      case NonterminalNode(slot, leftExtent, rightExtent, children) =>
-        this.slot == slot &&
-          this.leftExtent == leftExtent &&
-          this.rightExtent == rightExtent &&
-          this.children.zip(children).forall {
+      case n:NonterminalNode =>
+          this.slot == n.slot &&
+          this.leftExtent == n.leftExtent &&
+          this.rightExtent == n.rightExtent &&
+          this.children.zip(n.children).forall {
             case (x, y) => x.deepEquals(y, visited) }
       case _ => false
     }
   }
+
 }
 
 object NonterminalNode {
 
-  import NonterminalNodeType._
+  def apply(head: NonterminalSlot, slot: EndSlot, child: NonPackedNode): NonterminalNode
+    = new NonterminalNode(head, PackedNode(slot, child, slot.action, slot.ruleType))
 
-  def apply(head: Any, slot: Any, child: NonPackedNode, nodeType: NonterminalNodeType, _action: Action, _ruleType: Any) = {
+  def apply(head: NonterminalSlot, slot: EndSlot, child: NonPackedNode, value: Any): NonterminalNode = {
 
-    val packedNode = PackedNode(slot, child, _action, _ruleType)
+    val packedNode = PackedNode(slot, child, slot.action, slot.ruleType)
 
-    nodeType match {
-      case Basic => new BasicNonterminalNode(head, packedNode)
-      case Star  => new StarNonterminalNode(head, packedNode)
-      case Plus  => new PlusNonterminalNode(head, packedNode)
-      case Opt   => new OptNonterminalNode(head, packedNode)
-      case Seq   => new GroupNonterminalNode(head, packedNode)
-    }
+    if (value == null) new NonterminalNode(head, packedNode)
+    else new NonterminalNode(head, packedNode) { override def getValue = value }
+
   }
 
-  def apply(head: Any, slot: Any, child: NonPackedNode, nodeType: NonterminalNodeType, _value: Any, _action: Action, _ruleType: Any) = {
+  def unapply(n: NonterminalNode): Option[(NonterminalSlot, PackedNode)]
+    = Some((n.slot,  n.child))
 
-    val packedNode = PackedNode(slot, child, _action, _ruleType)
-
-    nodeType match {
-
-      case Basic => if (_value == null) new BasicNonterminalNode(head, packedNode)
-                    else new BasicNonterminalNode(head, packedNode) { override def getValue = _value }
-
-      case Star  => if (_value == null) new StarNonterminalNode(head, packedNode)
-                    else new StarNonterminalNode(head, packedNode) { override def getValue = _value }
-
-      case Plus  => if (_value == null) new PlusNonterminalNode(head, packedNode)
-                    else new PlusNonterminalNode(head, packedNode) { override def getValue = _value }
-
-      case Opt  => if (_value == null) new OptNonterminalNode(head, packedNode)
-                    else new OptNonterminalNode(head, packedNode) { override def getValue = _value }
-
-      case Seq  => if (_value == null) new GroupNonterminalNode(head, packedNode)
-                    else new GroupNonterminalNode(head, packedNode) { override def getValue = _value}
-    }
-  }
-
-  def unapply(n: NonterminalNode): Option[(Any, Int, Int, Seq[PackedNode])]
-    = Some((n.slot,  n.child.leftExtent, n.children.last.rightExtent, n.children))
 }
-
-case class BasicNonterminalNode(val slot: Any, override val child: PackedNode) extends NonterminalNode(child)
-case class StarNonterminalNode(val slot: Any, override val child: PackedNode) extends  NonterminalNode(child)
-case class PlusNonterminalNode(val slot: Any, override val child: PackedNode) extends NonterminalNode(child)
-case class OptNonterminalNode(val slot: Any, override val child: PackedNode) extends NonterminalNode(child)
-case class GroupNonterminalNode(val slot: Any, override val child: PackedNode) extends NonterminalNode(child)
-
 
 class IntermediateNode(val slot: Any, val child: PackedNode) extends NonterminalOrIntermediateNode(child) {
 
