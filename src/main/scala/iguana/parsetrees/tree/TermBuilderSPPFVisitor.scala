@@ -8,10 +8,10 @@ import scala.collection.mutable.{Buffer, Set}
 
 object TermBuilder {
 
-  def build[T >: Any](node: SPPFNode, builder: TreeBuilder[T]): Any =  {
+  def build[T >: Any](node: SPPFNode, builder: TreeBuilder[T]): T =  {
     val visitor = new TermBuilderSPPFVisitor(builder) with Memoization[SPPFNode]
     visitor.visit(node) match {
-      case Some(v) => v
+      case Some(v) => v.asInstanceOf[T]
       case None    => throw new RuntimeException()
     }
   }
