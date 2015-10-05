@@ -71,7 +71,8 @@ class ToJavaCode(val input: Input) extends Visitor[Tree] with Id {
       None
 
     case Opt(child) =>
-      sb ++= s"""Tree t${getId(node)} = createStar(t${getId(child)});\n"""
+      visit(child)
+      sb ++= s"""Tree t${getId(node)} = createOpt(t${getId(child)});\n"""
       None
   }
 }
