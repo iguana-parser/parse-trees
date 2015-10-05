@@ -5,3 +5,6 @@
 project
 projectFilesBackup
 .idea_modules
+.cache-main
+.settings
+build.properties

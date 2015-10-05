@@ -68,6 +68,7 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
       case Some(StarList(l))  => Buffer(builder.star(l))
       case Some(PlusList(l))  => Buffer(builder.plus(l))
       case Some(OptList(l))   => Buffer(builder.opt(l.head))
+      case Some(GroupList(l)) => Buffer(builder.group(l))
       case Some(l: Buffer[T]) => l
       case Some(x) => Buffer(x)
       case l: Buffer[T] => l
@@ -109,17 +110,5 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
       case (x, null)           => Buffer(x, builder.cycle())
       case _                   => Buffer(x, y)
   }
-
-//  def flatten(ls: Buffer[Any]): Buffer[Any]= ls flatMap {
-//    case t: Buffer[Any] =>  flatten(t)
-//    case c => List(c)
-//  }
-
-//  def toSet(ls: Seq[Any]): Set[Branch[T]] = {
-//    val setBuilder = Set.newBuilder[Branch[T]]
-//    ls.foreach(e => { if (e.isInstanceOf[Seq[T]]) setBuilder += builder.branch(e.asInstanceOf[Seq[T]])
-//                      else setBuilder += builder.branch(Buffer(e)) })
-//    setBuilder.result()
-//  }
 
 }

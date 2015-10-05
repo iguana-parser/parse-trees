@@ -20,7 +20,7 @@ publishTo := Some(localMaven)
 libraryDependencies ++= Seq(
   "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test",
 	"junit" % "junit" % "4.11",
-  "iguana" % "utils" % "0.0.1"
+  "iguana" % "utils" % "0.1.0"
 )
 
 addCommandAlias("generate-project", ";update-classifiers;update-sbt-classifiers;gen-idea sbt-classifiers")
