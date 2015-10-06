@@ -20,6 +20,7 @@ trait TreeBuilder[T] {
   def branch(children: Seq[T]): Branch[T]
   def star(children: Seq[T]): T
   def plus(children: Seq[T]): T
+  def alt(l: Seq[T]): T
   def opt(child: T): T
   def group(children: Seq[T]): T
   def cycle(): T
@@ -38,7 +39,6 @@ class DefaultTreeBuilder(input: Input) extends TreeBuilder[Tree] {
 
   override def terminalNode(name: String, l: Int, r: Int): Tree = Terminal(name, l, r)
 
-  //  def layoutNode(s: Any, l: Int, r: Int): T
   override def nonterminalNode(ruleType: Any, children: Seq[Tree], l: Int, r: Int): Tree = RuleNode(ruleType, children)
 
   override def ambiguityNode(children: Iterable[Branch[Tree]], l: Int, r: Int): Tree = Amb(children.toSet[Branch[Tree]])
@@ -54,6 +54,8 @@ class DefaultTreeBuilder(input: Input) extends TreeBuilder[Tree] {
   override def plus(children: Seq[Tree]): Tree = Plus(children)
 
   override def group(children: Seq[Tree]): Tree = Group(children)
+
+  override def alt(children: Seq[Tree]): Tree = Alt(children)
 
   override def opt(child: Tree): Tree = Opt(child)
 

@@ -71,6 +71,11 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
       addEdge(node, child)
       None
 
+    case Alt(children) =>
+      sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "|") + "\n"
+      children.foreach(c => { visit(c); addEdge(node, c)})
+      None
+
   }
 
   def getBranch(b: Branch[Tree]): Unit = {

@@ -3,7 +3,6 @@ package iguana.parsetrees.tree
 import iguana.parsetrees.sppf._
 import iguana.parsetrees.visitor.{Memoization, Visitor}
 import iguana.parsetrees.slot.NonterminalNodeType
-import scala.collection.mutable
 import scala.collection.mutable.{Buffer, Set}
 
 object TermBuilder {
@@ -24,8 +23,6 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
 
   case class StarList(l: Buffer[T])
   case class PlusList(l: Buffer[T])
-  case class OptList(l: Buffer[T])
-  case class GroupList(l: Buffer[T])
 
   override def visit(node: SPPFNode): Option[T] = node match {
 
@@ -43,8 +40,9 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
           case NonterminalNodeType.Basic => Some(builder.nonterminalNode(child.rule, getP1(child), n.leftExtent, n.rightExtent))
           case NonterminalNodeType.Star  => Some(StarList(makeList2(visit(child.leftChild))))
           case NonterminalNodeType.Plus  => Some(PlusList(makeList2(visit(child.leftChild))))
-          case NonterminalNodeType.Opt   => Some(OptList(makeList2(visit(child.leftChild))))
-          case NonterminalNodeType.Seq   => Some(GroupList(makeList2(visit(child.leftChild))))
+          case NonterminalNodeType.Opt   => Some(builder.opt(makeList2(visit(child.leftChild)).head))
+          case NonterminalNodeType.Seq   => Some(builder.group(makeList2(visit(child.leftChild))))
+          case NonterminalNodeType.Alt   => Some(builder.alt(makeList2(visit(child.leftChild))))
         }
       }
 
@@ -67,8 +65,7 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
       case Some(PlusList(Buffer(PlusList(l), r@_*))) => Buffer(builder.plus(l ++ r))
       case Some(StarList(l))  => Buffer(builder.star(l))
       case Some(PlusList(l))  => Buffer(builder.plus(l))
-      case Some(OptList(l))   => Buffer(builder.opt(l.head))
-      case Some(GroupList(l)) => Buffer(builder.group(l))
+      case Some(Alt(l))       => Buffer(builder.alt(l))
       case Some(l: Buffer[T]) => l
       case Some(x) => Buffer(x)
       case l: Buffer[T] => l
@@ -99,11 +96,9 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
   def merge(x: Any, y: Any): Buffer[Any] = (x, y) match {
       case (StarList(l), y)    => l :+ y
       case (PlusList(l), y)    => l :+ y
-      case (OptList(l), y)     => merge(builder.opt(l.head), y)
       case (x, PlusList(l))    => merge(x, builder.plus(l))
       case (x, StarList(Buffer(PlusList(l), r@_*)))  => merge(x, builder.star(l ++ r))
       case (x, StarList(l))    => merge(x, builder.star(l))
-      case (x, OptList(l))     => merge(x, builder.opt(l.head))
       case (l: Buffer[Any], y) => l :+ y
       case (null, null)        => Buffer(builder.cycle(), builder.cycle())
       case (null, y)           => Buffer(builder.cycle(), y)

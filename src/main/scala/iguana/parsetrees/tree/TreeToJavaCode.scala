@@ -74,5 +74,11 @@ class ToJavaCode(val input: Input) extends Visitor[Tree] with Id {
       visit(child)
       sb ++= s"""Tree t${getId(node)} = createOpt(t${getId(child)});\n"""
       None
+
+    case Alt(children) =>
+      children.foreach(visit(_))
+      val label = "list(" + children.map(c => "t" + getId(c)).mkString(", ") + ")"
+      sb ++= s"""Tree t${getId(node)} = createAlt($label);\n"""
+      None
   }
 }

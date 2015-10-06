@@ -10,6 +10,7 @@ object NonterminalNodeType {
   val Plus  = 2
   val Opt   = 3
   val Seq   = 4
+  val Alt   = 5
 }
 
 import NonterminalNodeType._

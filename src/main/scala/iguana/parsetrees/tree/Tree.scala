@@ -19,6 +19,7 @@ object TreeFactory {
   def createStar(children: java.util.List[Tree]) = Star(children)
   def createPlus(children: java.util.List[Tree]) = Plus(children)
   def createGroup(children: java.util.List[Tree]) = Group(children)
+  def createAlt(children: java.util.List[Tree]) = Alt(children)
   def createOpt(child: Tree) = Opt(child)
 }
 
@@ -76,5 +77,10 @@ case class Group(children: Seq[Tree]) extends Tree {
 case class Opt(child: Tree) extends Tree {
   override def leftExtent = child.leftExtent
   override def rightExtent = child.rightExtent
+}
+
+case class Alt(children: Seq[Tree]) extends Tree {
+  override def leftExtent = children.head.leftExtent
+  override def rightExtent = children.last.rightExtent
 }
 
