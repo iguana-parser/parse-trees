@@ -9,7 +9,7 @@ trait Tree {
 }
 
 object TreeFactory {
-  def createRule(ruleType: Any, children: java.util.List[Tree]) = RuleNode(ruleType, children)
+  def createRule(ruleType: RuleType, children: java.util.List[Tree]) = RuleNode(ruleType, children)
   def createAmbiguity(children: java.util.Set[Branch[Tree]]) = Amb(children.toSet)
   def createBranch(children: java.util.List[Tree]) = TreeBranch(children)
   def createTerminal(leftExtent: Int, rightExtent:Int) = Terminal(leftExtent, rightExtent)
@@ -23,7 +23,7 @@ object TreeFactory {
   def createOpt(child: Tree) = Opt(child)
 }
 
-case class RuleNode(val r: Any, val ts: Seq[Tree]) extends Tree {
+case class RuleNode(val r: RuleType, val ts: Seq[Tree]) extends Tree {
   override def leftExtent= ts.head.leftExtent
   override def rightExtent = ts.last.rightExtent
 }

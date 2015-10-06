@@ -28,6 +28,7 @@
 package iguana.parsetrees.sppf
 
 import iguana.parsetrees.slot._
+import iguana.parsetrees.tree.RuleType
 
 import scala.collection.mutable.{ListBuffer, Set}
 
@@ -107,7 +108,7 @@ class NonterminalNode(val slot: NonterminalSlot, val child: PackedNode) extends 
    * @return true if the second packed node of this nonterminal node is added.
    *         This is useful for couting the number of ambigous nodes.
    */
-  def addPackedNode(slot: Any, child: NonPackedNode, action: Action, ruleType: Any) =
+  def addPackedNode(slot: Any, child: NonPackedNode, action: Action, ruleType: RuleType) =
     if (rest == null) {
       rest = ListBuffer(PackedNode(slot, child, action, ruleType))
       true
@@ -200,7 +201,7 @@ trait PackedNode extends SPPFNode {
   def leftChild: T
   def rightChild: T = null
   def action: Action = null
-  def rule: Any = null
+  def rule: RuleType = null
 
   def leftExtent = leftChild.leftExtent
   def rightExtent = if (rightChild != null) rightChild.rightExtent else leftChild.rightExtent
@@ -228,13 +229,13 @@ object PackedNode {
     override def slot = s
   }
 
-  def apply(s: Any, child: NonPackedNode, a: Action, r: Any): PackedNode =
+  def apply(s: Any, child: NonPackedNode, a: Action, r: RuleType): PackedNode =
       if (a == null && r == null) new PackedNode { override def leftChild = child; override def slot = s }
       else if (r == null) new PackedNode { override def leftChild = child; override def slot = s; override def action = a }
       else if (a == null) new PackedNode { override def leftChild = child; override def slot = s; override def rule = r }
       else new PackedNode { override def leftChild = child; override def slot = s; override def action = a; override def rule = r }
 
-  def apply(s: Any, l: NonPackedNode, r: NonPackedNode, a: Action, _r: Any): PackedNode =
+  def apply(s: Any, l: NonPackedNode, r: NonPackedNode, a: Action, _r: RuleType): PackedNode =
       if (a == null && r == null) new PackedNode { override def leftChild = l; override def slot = s; override def rightChild = r }
       else if (r == null) new PackedNode { override def leftChild = l; override def slot = s; override def action = a }
       else if (a == null) new PackedNode { override def leftChild = l; override def rightChild = r; override def slot = s }

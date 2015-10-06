@@ -33,7 +33,7 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
       None
 
     case RuleNode(r, children) =>
-      sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", r) + "\n"
+      sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", r.head) + "\n"
       children.foreach(c => { visit(c); addEdge(node, c)})
       None
 

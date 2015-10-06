@@ -14,11 +14,12 @@ object NonterminalNodeType {
 }
 
 import NonterminalNodeType._
+import iguana.parsetrees.tree.RuleType
 
 trait Slot
 
 trait EndSlot extends Slot {
-  def ruleType: Any
+  def ruleType: RuleType
   def action: Action
 }
 

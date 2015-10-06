@@ -12,10 +12,15 @@ trait Branch[T] {
   def rightExtent: Int
 }
 
+trait RuleType {
+  def head: String
+  def body: java.util.List[String]
+}
+
 trait TreeBuilder[T] {
   def terminalNode(l: Int, r: Int): T
   def terminalNode(name: String, l: Int, r: Int): T
-  def nonterminalNode(ruleType: Any, children: Seq[T], l: Int, r: Int): T
+  def nonterminalNode(ruleType: RuleType, children: Seq[T], l: Int, r: Int): T
   def ambiguityNode(children: Iterable[Branch[T]], l:Int, r:Int): T
   def branch(children: Seq[T]): Branch[T]
   def star(children: Seq[T]): T
@@ -39,7 +44,7 @@ class DefaultTreeBuilder(input: Input) extends TreeBuilder[Tree] {
 
   override def terminalNode(name: String, l: Int, r: Int): Tree = Terminal(name, l, r)
 
-  override def nonterminalNode(ruleType: Any, children: Seq[Tree], l: Int, r: Int): Tree = RuleNode(ruleType, children)
+  override def nonterminalNode(ruleType: RuleType, children: Seq[Tree], l: Int, r: Int): Tree = RuleNode(ruleType, children)
 
   override def ambiguityNode(children: Iterable[Branch[Tree]], l: Int, r: Int): Tree = Amb(children.toSet[Branch[Tree]])
 
