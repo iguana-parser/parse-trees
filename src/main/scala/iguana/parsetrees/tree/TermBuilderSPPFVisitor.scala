@@ -1,9 +1,10 @@
 package iguana.parsetrees.tree
 
+import iguana.parsetrees.slot.NonterminalNodeType
 import iguana.parsetrees.sppf._
 import iguana.parsetrees.visitor.{Memoization, Visitor}
-import iguana.parsetrees.slot.NonterminalNodeType
-import scala.collection.mutable.{Buffer, Set}
+
+import scala.collection.mutable.Buffer
 
 object TermBuilder {
 
@@ -34,68 +35,66 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
 
     case n@NonterminalNode(slot, child) =>
       if (n.isAmbiguous) {
-        Some(builder.ambiguityNode(n.children.map(p => builder.branch(getP1(p))), n.leftExtent, n.rightExtent))
+        Some(builder.ambiguityNode(n.children.map(p => builder.branch(makeList(visit(p.leftChild)))), n.leftExtent, n.rightExtent))
       } else {
         n.slot.nodeType match {
-          case NonterminalNodeType.Basic => Some(builder.nonterminalNode(child.rule, getP1(child), n.leftExtent, n.rightExtent))
-          case NonterminalNodeType.Star  => Some(StarList(makeList2(visit(child.leftChild))))
-          case NonterminalNodeType.Plus  => Some(PlusList(makeList2(visit(child.leftChild))))
-          case NonterminalNodeType.Opt   => Some(builder.opt(makeList2(visit(child.leftChild)).head))
-          case NonterminalNodeType.Seq   => Some(builder.group(makeList2(visit(child.leftChild))))
-          case NonterminalNodeType.Alt   => Some(builder.alt(makeList2(visit(child.leftChild))))
+          case NonterminalNodeType.Basic => Some(builder.nonterminalNode(child.rule, makeList(visit(child.leftChild)), n.leftExtent, n.rightExtent))
+          case NonterminalNodeType.Star  => Some(flattenStar(visit(child.leftChild)))
+          case NonterminalNodeType.Plus  => Some(flattenPlus(visit(child.leftChild)))
+          case NonterminalNodeType.Opt   => Some(builder.opt(makeList(visit(child.leftChild)).head))
+          case NonterminalNodeType.Seq   => Some(builder.group(makeList(visit(child.leftChild))))
+          case NonterminalNodeType.Alt   => Some(builder.alt(makeList(visit(child.leftChild))))
         }
       }
 
     case IntermediateNode(slot, leftExtent, rightExtent, children) =>
       if (children.size > 1) // Ambiguous node
-        Some(builder.ambiguityNode(children.map(n => builder.branch(getP2(n).get)), leftExtent, rightExtent))
+        Some(builder.ambiguityNode(children.map(n => builder.branch(merge(n).get)), leftExtent, rightExtent))
       else
-        getP2(children.head)
+        merge(children.head)
 
     case PackedNode(slot, pivot, leftChild, rightChild) => throw new RuntimeException("Should not come here!")
   }
 
-  def getP1(p: PackedNode): Buffer[T] = makeList(visit(p.leftChild))
-
   def makeList(v: Any): Buffer[T] = v match {
-      case null => Buffer(builder.cycle())
       case Some(null) => Buffer(builder.cycle())
       case None => Buffer()
       case Some(StarList(Buffer(PlusList(l), r@_*))) => Buffer(builder.star(l ++ r))
       case Some(PlusList(Buffer(PlusList(l), r@_*))) => Buffer(builder.plus(l ++ r))
       case Some(StarList(l))  => Buffer(builder.star(l))
       case Some(PlusList(l))  => Buffer(builder.plus(l))
-      case Some(Alt(l))       => Buffer(builder.alt(l))
       case Some(l: Buffer[T]) => l
       case Some(x) => Buffer(x)
-      case l: Buffer[T] => l
-      case x => Buffer(x)
   }
 
-  def makeList2(v: Any): Buffer[T] = v match {
-      case null => Buffer(builder.cycle())
-      case Some(null) => Buffer(builder.cycle())
-      case None => Buffer()
-      case Some(StarList(Buffer(PlusList(l), r@_*))) => Buffer(StarList(l ++ r))
-      case Some(StarList(Buffer(StarList(l), r@_*))) => Buffer(StarList(l ++ r))
-      case Some(PlusList(Buffer(PlusList(l), r@_*))) => Buffer(PlusList(l ++ r))
-      case Some(l: Buffer[T]) => l
-      case Some(x) => Buffer(x)
-      case l: Buffer[T] => l
-      case x => Buffer(x)
+  def flattenStar(child: Any): Any = child match {
+    // A* ::= epsilon
+    case Some(e:Epsilon)     => builder.star(Buffer(e))
+      // A* ::= A+
+    case Some(PlusList(l)) => builder.star(l)
+  }
+
+  def flattenPlus(child: Any): Any = child match {
+
+      // A+ ::= A+ A
+      case Some(Buffer(PlusList(l), r@_*)) => PlusList(l ++ r)
+
+      // A+ ::= A
+      case Some(l:Buffer[Any]) => PlusList(l)
+      case Some(x) => PlusList(Buffer(x))
   }
 
   /**
    * Gets the children of a packed node under intermediate node
    */
-  def getP2(p: PackedNode): Option[Buffer[Any]] =
+  def merge(p: PackedNode): Option[Buffer[Any]] =
       for { x <- visit(p.leftChild)
           y <- visit(p.rightChild) }
       yield merge(x, y)
 
   def merge(x: Any, y: Any): Buffer[Any] = (x, y) match {
-      case (StarList(l), y)    => l :+ y
-      case (PlusList(l), y)    => l :+ y
+      case (StarList(l), y)    => Buffer(builder.star(l)) :+ y
+      case (PlusList(l), y)    => Buffer(PlusList(l :+ y))
       case (x, PlusList(l))    => merge(x, builder.plus(l))
       case (x, StarList(Buffer(PlusList(l), r@_*)))  => merge(x, builder.star(l ++ r))
       case (x, StarList(l))    => merge(x, builder.star(l))

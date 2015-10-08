@@ -2,7 +2,6 @@ package iguana.parsetrees.sppf
 
 import iguana.parsetrees.visitor.{Memoization, Id, Visitor}
 import iguana.utils.input.Input
-import iguana.utils.visualization.GraphVizUtil
 
 import scala.collection.mutable._
 import iguana.utils.visualization.GraphVizUtil._
@@ -31,13 +30,13 @@ class SPPFToDot(input: Input) extends Visitor[SPPFNode] with Id {
         val name = n.name
         val slot = n.slot
         val color = if (n.isAmbiguous) "red" else "black"
-        sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format(color, name + "," + n.leftExtent + "," + n.rightExtent) + "\n"
+        sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format(color, escape(name) + "," + n.leftExtent + "," + n.rightExtent) + "\n"
         children.foreach(c => { visit(c); addEdge(node, c, sb)})
         None
 
       case n@IntermediateNode(name, leftExtent, rightExtent, children) =>
         val color = if (n.isAmbiguous) "red" else "black"
-        sb ++= s"""${getId(node)}""" + RECTANGLE.format(color, name + "," + leftExtent + "," + rightExtent) + "\n"
+        sb ++= s"""${getId(node)}""" + RECTANGLE.format(color, escape(name) + "," + leftExtent + "," + rightExtent) + "\n"
         children.foreach(c => { visit(c); addEdge(node, c, sb)})
         None
 
@@ -45,11 +44,11 @@ class SPPFToDot(input: Input) extends Visitor[SPPFNode] with Id {
           if (leftExtent == rightExtent)
             sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "&epsilon;" + "," + leftExtent) + "\n"
           else
-            sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", name + "," + leftExtent + "," + rightExtent + " (\\\"" + input.subString(leftExtent, rightExtent) +  "\\\")") + "\n"
+            sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", escape(name) + "," + leftExtent + "," + rightExtent + " (\\\"" + escape(input.subString(leftExtent, rightExtent)) +  "\\\")") + "\n"
           None
 
       case PackedNode(name, pivot, leftChild, rightChild) =>
-        sb ++= s"""${getId(node)}""" + CIRCLE.format("black", "", name + "," + pivot) + "\n"
+        sb ++= s"""${getId(node)}""" + CIRCLE.format("black", "", escape(name) + "," + pivot) + "\n"
         visit(leftChild);
         addEdge(node, leftChild, sb)
 
@@ -64,6 +63,8 @@ class SPPFToDot(input: Input) extends Visitor[SPPFNode] with Id {
     sb ++= s"""edge [color=black, style=solid, penwidth=0.5, arrowsize=0.7]; ${getId(src)} -> { ${getId(dst)} }\n"""
   }
 
-  def escape(s: Any): String = s.toString.replaceAll("\"", "\\\\\"").replaceAll("\t", "t").replaceAll("\n", "n").replaceAll("\r", "r")
-
+  def escape(s: Any) = s.toString.replaceAll("\"", "\\\\\"")
+                                 .replaceAll("\n", "n")
+                                 .replaceAll("\t", "t")
+                                 .replaceAll("\r", "r")
 }
