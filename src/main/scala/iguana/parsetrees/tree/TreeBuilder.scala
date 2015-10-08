@@ -28,7 +28,7 @@ trait TreeBuilder[T] {
   def alt(l: Seq[T]): T
   def opt(child: T): T
   def group(children: Seq[T]): T
-  def cycle(): T
+  def cycle(label: String): T
   def epsilon(i: Int): T
 }
 
@@ -50,7 +50,7 @@ class DefaultTreeBuilder(input: Input) extends TreeBuilder[Tree] {
 
   override def branch(children: Seq[Tree]): Branch[Tree] = TreeBranch(children)
 
-  override def cycle() = Cycle()
+  override def cycle(label: String) = Cycle(label)
 
   override def epsilon(i: Int): Tree = Epsilon(i)
 

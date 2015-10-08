@@ -1,7 +1,7 @@
 
 package iguana.parsetrees.tree
 
-import iguana.parsetrees.visitor.{Memoization, Id, Visitor}
+import iguana.parsetrees.visitor._
 import iguana.utils.input.Input
 
 import scala.collection.mutable.StringBuilder
@@ -26,7 +26,7 @@ class ToJavaCode(val input: Input) extends Visitor[Tree] with Id {
 
   val sb = new StringBuilder
 
-  override def visit(node: Tree): Option[Unit] = node match {
+  override def visit(node: Tree): VisitResult[Unit] = node match {
 
     case Terminal(name, i, j) =>
       sb ++= s"""Tree t${getId(node)} = createTerminal($i, $j);\n"""

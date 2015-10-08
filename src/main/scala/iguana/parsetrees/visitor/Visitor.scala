@@ -27,11 +27,43 @@
 
 package iguana.parsetrees.visitor
 
+import iguana.parsetrees.sppf.{IntermediateNode, NonterminalNode, SPPFNode}
+
 import scala.collection.mutable._
 
 trait Visitor[A] {
   type T
-  def visit(node: A): Option[T]
+  def visit(node: A): VisitResult[T]
+}
+
+trait VisitResult[+A] {
+
+  def get: A
+
+  def isDefined: Boolean
+
+  def isEmpty: Boolean = !isDefined
+
+  def map[B](f: A => B): VisitResult[B] =
+    if (isDefined) Some(f(this.get)) else None
+
+  def toSeq: collection.Seq[A] =
+    if (isDefined) Buffer(this.get) else Buffer()
+}
+
+case class Some[+A](a: A) extends VisitResult[A] {
+  override def get: A = a
+  override def isDefined: Boolean = true
+}
+
+case object None extends VisitResult[Nothing] {
+  override def get: Nothing = throw new NoSuchElementException
+  override def isDefined: Boolean = false
+}
+
+case class Unknown(label: String) extends VisitResult[Nothing] {
+  override def get: Nothing = throw new NoSuchElementException
+  override def isDefined: Boolean = false
 }
 
 trait Id {
@@ -41,17 +73,33 @@ trait Id {
 
 trait Memoization[A] extends Visitor[A] {
 
-  val cache = new HashMap[A, Option[T]]
+  val cache = new HashMap[A, VisitResult[T]]
 
-  override abstract def visit(node: A): Option[T] = {
+  override abstract def visit(node: A): VisitResult[T] = cache.getOrElseUpdate(node, super.visit(node))
+}
 
-    if (!cache.contains(node)) {
-      cache.put(node, Some(null.asInstanceOf[T]))
-      val v = super.visit(node)
-      cache.put(node, v)
-      return v
-    } else {
-      cache.get(node).get
+trait SPPFMemoization extends Visitor[SPPFNode] {
+  val cache = new HashMap[SPPFNode, VisitResult[T]]
+
+  override abstract def visit(node: SPPFNode): VisitResult[T] = {
+
+    node match {
+
+      case n: NonterminalNode => {
+        if (!cache.contains(node)) {
+          cache.put(node, Unknown(n.slot.toString))
+          val v = super.visit(node)
+          cache.put(node, v)
+          return v
+        } else {
+          cache.get(node).get
+        }
+      }
+
+      case _ => {
+        val x = cache.getOrElseUpdate(node, super.visit(node))
+        x
+      }
     }
   }
 }
@@ -60,7 +108,7 @@ trait Predicate[A] extends Visitor[A] {
 
   def predicate: A => Boolean
 
-  override abstract def visit(node: A): Option[T] = {
+  override abstract def visit(node: A): VisitResult[T] = {
     if (predicate(node)) super.visit(node) else None
   }
 

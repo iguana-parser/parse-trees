@@ -1,6 +1,6 @@
 package iguana.parsetrees.sppf
 
-import iguana.parsetrees.visitor.{Memoization, Id, Visitor}
+import iguana.parsetrees.visitor._
 import iguana.utils.input.Input
 
 import scala.collection.mutable._
@@ -9,7 +9,7 @@ import iguana.utils.visualization.GraphVizUtil._
 object SPPFVisualization {
 
   def generate(node: SPPFNode, dir: String, fileName: String, input: Input) {
-    val sppfToDot = new SPPFToDot(input) with Memoization[SPPFNode]
+    val sppfToDot = new SPPFToDot(input) with SPPFMemoization
     sppfToDot.visit(node)
     generateGraph(sppfToDot.get, dir, fileName)
   }
@@ -23,7 +23,7 @@ class SPPFToDot(input: Input) extends Visitor[SPPFNode] with Id {
 
   val sb = new StringBuilder
 
-  def visit(node: SPPFNode): Option[T] = node match {
+  def visit(node: SPPFNode): VisitResult[T] = node match {
 
       case n:NonterminalNode =>
         val children = n.children

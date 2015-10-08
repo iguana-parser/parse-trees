@@ -14,7 +14,7 @@ object TreeFactory {
   def createBranch(children: java.util.List[Tree]) = TreeBranch(children)
   def createTerminal(leftExtent: Int, rightExtent:Int) = Terminal(leftExtent, rightExtent)
   def createEpsilon(i: Int) = Epsilon(i)
-  def createCycle() = Cycle()
+  def createCycle(label: String) = Cycle(label)
   def createLayout(t: Tree) = Layout(t)
   def createStar(children: java.util.List[Tree]) = Star(children)
   def createPlus(children: java.util.List[Tree]) = Plus(children)
@@ -54,7 +54,7 @@ case class Epsilon(i: Int) extends Tree {
   override def rightExtent = i
 }
 
-case class Cycle() extends Tree {
+case class Cycle(label: String) extends Tree {
   override def leftExtent = throw new RuntimeException("Should not be called!")
   override def rightExtent = throw new RuntimeException("Should not be called!")
 }

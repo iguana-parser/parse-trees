@@ -1,6 +1,6 @@
 package iguana.parsetrees.sppf
 
-import iguana.parsetrees.visitor.{Memoization, Id, Visitor}
+import iguana.parsetrees.visitor._
 
 object SPPFToJavaCode {
 
@@ -20,7 +20,7 @@ class ToJavaCode extends Visitor[SPPFNode] with Id {
 
   def get = sb.toString
 
-  def visit(node: SPPFNode): Option[T] = node match {
+  def visit(node: SPPFNode): VisitResult[T] = node match {
 
     case n:NonterminalNode =>
       val children = n.children

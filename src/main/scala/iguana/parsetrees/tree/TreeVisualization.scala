@@ -1,7 +1,7 @@
 
 package iguana.parsetrees.tree
 
-import iguana.parsetrees.visitor.{Predicate, Memoization, Id, Visitor}
+import iguana.parsetrees.visitor._
 import iguana.utils.input.Input
 import iguana.utils.visualization.GraphVizUtil._
 
@@ -36,7 +36,7 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
 
   val sb = new StringBuilder
 
-  override def visit(node: Tree): Option[T] = node match {
+  override def visit(node: Tree): VisitResult[T] = node match {
 
     case Terminal(name, i, j) =>
       val id = getId(node)
@@ -90,13 +90,13 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
 
   }
 
-  def getBranch(b: Branch[Tree]): Option[Seq[Int]] = {
+  def getBranch(b: Branch[Tree]): VisitResult[Seq[Int]] = {
     sb ++= s"${getId(b)} ${CIRCLE.format("black", "", "")}\n"
     val ids = for (c <- b.children; x <- visit(c).toSeq; i <- x) yield i
     addEdge(b, ids)
   }
 
-  def addEdge(node: Any, dstIds: Seq[Int]): Option[Seq[Int]] = {
+  def addEdge(node: Any, dstIds: Seq[Int]): VisitResult[Seq[Int]] = {
     if (! dstIds.isEmpty)
       sb ++= s"edge [color=black, style=solid, penwidth=0.5, arrowsize=0.7]; ${getId(node)} -> { ${dstIds.mkString(", ")} }\n"
     Some(Buffer(getId(node)))
