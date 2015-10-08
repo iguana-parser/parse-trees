@@ -61,12 +61,7 @@ trait Predicate[A] extends Visitor[A] {
   def predicate: A => Boolean
 
   override abstract def visit(node: A): Option[T] = {
-    if (predicate(node)) {
-      super.visit(node)
-    }
-    else {
-      None
-    }
+    if (predicate(node)) super.visit(node) else None
   }
 
 }
