@@ -8,13 +8,19 @@ import scala.collection.mutable.Buffer
 
 object TermBuilder {
 
-  def build[T >: Any](node: SPPFNode, builder: TreeBuilder[T]): T =  {
-    val visitor = new TermBuilderSPPFVisitor(builder) with Memoization[SPPFNode]
+  def build[T >: Any](node: SPPFNode, builder: TreeBuilder[T]): T
+    = build(node, builder, new TermBuilderSPPFVisitor(builder) with Memoization[SPPFNode]);
+
+  def build_no_memo[T >: Any](node: SPPFNode, builder: TreeBuilder[T]): T
+    = build(node, builder, new TermBuilderSPPFVisitor(builder));
+
+  private def build[T >: Any](node: SPPFNode, builder: TreeBuilder[T], visitor: TermBuilderSPPFVisitor): T =  {
     visitor.visit(node) match {
       case Some(v) => v.asInstanceOf[T]
       case None    => throw new RuntimeException()
     }
   }
+
 }
 
 
