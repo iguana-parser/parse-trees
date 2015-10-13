@@ -48,8 +48,8 @@ class ToJavaCode(val input: Input) extends Visitor[Tree] with Id {
       sb ++= s"""Tree t${getId(node)} = createEpsilon($i);\n"""
       None
 
-    case Cycle() =>
-      sb ++= s"""Tree t${getId(node)} = createCycle();\n"""
+    case Cycle(label) =>
+      sb ++= s"""Tree t${getId(node)} = createCycle($label);\n"""
       None
 
     case Star(children) =>

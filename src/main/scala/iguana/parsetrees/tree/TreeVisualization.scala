@@ -58,9 +58,9 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
       sb ++= s"$id ${ROUNDED_RECTANGLE.format("black", "&epsilon;")}\n"
       Some(Buffer(id))
 
-    case Cycle() =>
+    case Cycle(label) =>
       val id = getId(node)
-      sb ++= s"$id ${CIRCLE.format("red", "Cycle", "")}\n"
+      sb ++= s"$id ${CIRCLE.format("red", "Cycle", label)}\n"
       Some(Buffer(id))
 
     case Star(children) =>
