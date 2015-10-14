@@ -29,6 +29,7 @@ package iguana.parsetrees.sppf
 
 import iguana.parsetrees.slot._
 import iguana.parsetrees.tree.RuleType
+import iguana.utils.input.Input
 
 import scala.collection.mutable.{ListBuffer, Set}
 
@@ -38,17 +39,20 @@ import scala.collection.mutable.{ListBuffer, Set}
  */
 object SPPFNodeFactory {
 
-  def createTerminalNode(s: Any, leftExtent: Int, rightExtent: Int) = new TerminalNode(s.asInstanceOf[TerminalSlot], leftExtent, rightExtent)
+  def createTerminalNode(s: Slot, leftExtent: Int, rightExtent: Int, input: Input) =
+    TerminalNode(s.asInstanceOf[TerminalSlot], leftExtent, rightExtent, input)
 
-  def createEpsilonNode(s: Any, index: Int) = createTerminalNode(s, index, index)
+  def createEpsilonNode(s: Slot, index: Int, input: Input) =
+    createTerminalNode(s, index, index, input)
 
-  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode)
-      = NonterminalNode(head.asInstanceOf[NonterminalSlot], slot.asInstanceOf[EndSlot], child)
+  def createNonterminalNode(head: Slot, slot: Slot, child: NonPackedNode, input: Input) =
+    NonterminalNode(head.asInstanceOf[NonterminalSlot], slot.asInstanceOf[EndSlot], child, input)
 
-  def createNonterminalNode(head: Any, slot: Any, child: NonPackedNode, value: Any)
-      = NonterminalNode(head.asInstanceOf[NonterminalSlot], slot.asInstanceOf[EndSlot], child, value)
+  def createNonterminalNode(head: Slot, slot: EndSlot, child: NonPackedNode, value: Any, input: Input) =
+    NonterminalNode(head.asInstanceOf[NonterminalSlot], slot, child, value, input)
 
-  def createIntermediateNode(s: Any, leftChild: NonPackedNode, rightChild: NonPackedNode) = IntermediateNode(s, leftChild, rightChild)
+  def createIntermediateNode(s: Any, leftChild: NonPackedNode, rightChild: NonPackedNode) =
+    IntermediateNode(s, leftChild, rightChild)
 }
 
 trait SPPFNode {
@@ -98,7 +102,7 @@ abstract class NonterminalOrIntermediateNode(child: PackedNode) extends NonPacke
   def isAmbiguous = rest != null && !rest.isEmpty
 }
 
-class NonterminalNode(val slot: NonterminalSlot, val child: PackedNode) extends NonterminalOrIntermediateNode(child) {
+class NonterminalNode(val slot: NonterminalSlot, val child: PackedNode, val input: Input) extends NonterminalOrIntermediateNode(child) {
 
   def getValue: Any = null
 
@@ -134,15 +138,15 @@ class NonterminalNode(val slot: NonterminalSlot, val child: PackedNode) extends 
 
 object NonterminalNode {
 
-  def apply(head: NonterminalSlot, slot: EndSlot, child: NonPackedNode): NonterminalNode
-    = new NonterminalNode(head, PackedNode(slot, child, slot.action, slot.ruleType))
+  def apply(head: NonterminalSlot, slot: EndSlot, child: NonPackedNode, input: Input): NonterminalNode
+    = new NonterminalNode(head, PackedNode(slot, child, slot.action, slot.ruleType), input)
 
-  def apply(head: NonterminalSlot, slot: EndSlot, child: NonPackedNode, value: Any): NonterminalNode = {
+  def apply(head: NonterminalSlot, slot: EndSlot, child: NonPackedNode, value: Any, input: Input): NonterminalNode = {
 
     val packedNode = PackedNode(slot, child, slot.action, slot.ruleType)
 
-    if (value == null) new NonterminalNode(head, packedNode)
-    else new NonterminalNode(head, packedNode) { override def getValue = value }
+    if (value == null) new NonterminalNode(head, packedNode, input)
+    else new NonterminalNode(head, packedNode, input) { override def getValue = value }
 
   }
 
@@ -183,12 +187,12 @@ object IntermediateNode {
     = Some((n.slot, n.child.leftExtent, n.child.rightExtent, n.children))
 }
 
-case class TerminalNode(val slot: TerminalSlot, val leftExtent: Int, val rightExtent: Int) extends NonPackedNode {
+case class TerminalNode(val slot: TerminalSlot, val leftExtent: Int, val rightExtent: Int, val input: Input) extends NonPackedNode {
   def isAmbiguous = false
   def children = ListBuffer()
 
   def deepEquals(other: SPPFNode, visited: Set[SPPFNode]): Boolean = other match {
-    case TerminalNode(slot, leftExtent, rightExtent) =>
+    case TerminalNode(slot, leftExtent, rightExtent, input) =>
       slot == this.slot &&
       leftExtent == this.leftExtent &&
       rightExtent == this.rightExtent

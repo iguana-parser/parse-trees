@@ -37,7 +37,7 @@ class ToJavaCode extends Visitor[SPPFNode] with Id {
       children.tail.foreach(c => sb ++= s"""node${getId(node)}.addPackedNode(registry.getSlot("${c.slot.toString}"), node${getId(c.leftChild)}, node${getId(c.rightChild)});\n""")
       None
 
-    case TerminalNode(name, leftExtent, rightExtent) =>
+    case TerminalNode(name, leftExtent, rightExtent, input) =>
       sb ++= s"""TerminalNode node${getId(node)} = createTerminalNode(registry.getSlot("$name"), $leftExtent, $rightExtent);\n"""
       None
   }

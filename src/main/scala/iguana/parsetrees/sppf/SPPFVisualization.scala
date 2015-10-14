@@ -40,7 +40,7 @@ class SPPFToDot(input: Input) extends Visitor[SPPFNode] with Id {
         children.foreach(c => { visit(c); addEdge(node, c, sb)})
         None
 
-      case TerminalNode(name, leftExtent, rightExtent) =>
+      case TerminalNode(name, leftExtent, rightExtent, input) =>
           if (leftExtent == rightExtent)
             sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "&epsilon;" + "," + leftExtent) + "\n"
           else

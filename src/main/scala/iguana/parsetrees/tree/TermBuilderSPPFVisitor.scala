@@ -34,7 +34,7 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
 
   override def visit(node: SPPFNode): VisitResult[T] = node match {
 
-    case TerminalNode(slot, leftExtent, rightExtent) =>
+    case TerminalNode(slot, leftExtent, rightExtent, input) =>
       if (leftExtent == rightExtent) Some(builder.epsilon(leftExtent))
       else
       if (slot.terminalName == null) Some(builder.terminalNode(leftExtent, rightExtent))
