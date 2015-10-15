@@ -150,8 +150,8 @@ object NonterminalNode {
 
   }
 
-  def unapply(n: NonterminalNode): Option[(NonterminalSlot, PackedNode)]
-    = Some((n.slot,  n.child))
+  def unapply(n: NonterminalNode): Option[(NonterminalSlot, PackedNode, Input)]
+    = Some((n.slot, n.child, n.input))
 
 }
 

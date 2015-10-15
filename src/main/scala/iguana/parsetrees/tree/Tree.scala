@@ -1,5 +1,7 @@
 package iguana.parsetrees.tree
 
+import iguana.utils.input.Input
+
 import scala.collection.convert.wrapAsScala._
 import scala.collection.immutable.Set
 
@@ -9,10 +11,10 @@ trait Tree {
 }
 
 object TreeFactory {
-  def createRule(ruleType: RuleType, children: java.util.List[Tree]) = RuleNode(ruleType, children)
+  def createRule(ruleType: RuleType, children: java.util.List[Tree], input: Input) = RuleNode(ruleType, children, input)
   def createAmbiguity(children: java.util.Set[Branch[Tree]]) = Amb(children.toSet)
   def createBranch(children: java.util.List[Tree]) = TreeBranch(children)
-  def createTerminal(leftExtent: Int, rightExtent:Int) = Terminal(leftExtent, rightExtent)
+  def createTerminal(leftExtent: Int, rightExtent:Int, input: Input) = Terminal(leftExtent, rightExtent, input)
   def createEpsilon(i: Int) = Epsilon(i)
   def createCycle(label: String) = Cycle(label)
   def createLayout(t: Tree) = Layout(t)
@@ -23,7 +25,7 @@ object TreeFactory {
   def createOpt(child: Tree) = Opt(child)
 }
 
-case class RuleNode(val r: RuleType, val ts: Seq[Tree]) extends Tree {
+case class RuleNode(val r: RuleType, val ts: Seq[Tree], input: Input) extends Tree {
   override def leftExtent= ts.head.leftExtent
   override def rightExtent = ts.last.rightExtent
 }
@@ -38,10 +40,11 @@ case class Amb(ts: Set[Branch[Tree]]) extends Tree {
   override def rightExtent: Int = ts.head.rightExtent
 }
 
-case class Terminal(name: String, leftExtent: Int, rightExtent: Int) extends Tree
+case class Terminal(name: String, leftExtent: Int, rightExtent: Int, input: Input) extends Tree
 
 object Terminal {
-  def apply(leftExtent: Int, rightExtent: Int): Terminal = Terminal("DEFAULT", leftExtent, rightExtent)
+  def apply(leftExtent: Int, rightExtent: Int, input: Input): Terminal =
+    Terminal("DEFAULT", leftExtent, rightExtent, input)
 }
 
 case class Layout(t: Tree) extends Tree {

@@ -8,14 +8,14 @@ import iguana.utils.visualization.GraphVizUtil._
 
 object SPPFVisualization {
 
-  def generate(node: SPPFNode, dir: String, fileName: String, input: Input) {
-    val sppfToDot = new SPPFToDot(input) with SPPFMemoization
+  def generate(node: SPPFNode, dir: String, fileName: String) {
+    val sppfToDot = new SPPFToDot with SPPFMemoization
     sppfToDot.visit(node)
     generateGraph(sppfToDot.get, dir, fileName)
   }
 }
 
-class SPPFToDot(input: Input) extends Visitor[SPPFNode] with Id {
+class SPPFToDot extends Visitor[SPPFNode] with Id {
 
   type T = Unit
 

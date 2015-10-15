@@ -9,16 +9,16 @@ import scala.collection.mutable.{Buffer, StringBuilder, Set}
 
 object TreeVisualization {
 
-  def generate(node: Tree, dir: String, fileName: String, input: Input) {
-    val treeToDot = new TreeToDot(input) with Memoization[Tree]
+  def generate(node: Tree, dir: String, fileName: String) {
+    val treeToDot = new TreeToDot with Memoization[Tree]
     treeToDot.visit(node)
     generateGraph(treeToDot.get, dir, fileName)
   }
 
-  def generate(node: Tree, dir: String, fileName: String, input: Input, ignore: java.util.Set[String]) {
-    val treeToDot = new TreeToDot(input) with Memoization[Tree] with Predicate[Tree] {
+  def generate(node: Tree, dir: String, fileName: String,  ignore: java.util.Set[String]) {
+    val treeToDot = new TreeToDot with Memoization[Tree] with Predicate[Tree] {
       override def predicate: Tree => Boolean = t => t match {
-        case RuleNode(r, ts) => !ignore.contains(r.head)
+        case RuleNode(r, ts, input) => !ignore.contains(r.head)
         case _ => true
       }
     }
@@ -28,7 +28,7 @@ object TreeVisualization {
 
 }
 
-class TreeToDot(input: Input) extends Visitor[Tree] with Id {
+class TreeToDot extends Visitor[Tree] with Id {
 
   type T = Seq[Int]
 
@@ -38,12 +38,12 @@ class TreeToDot(input: Input) extends Visitor[Tree] with Id {
 
   override def visit(node: Tree): VisitResult[T] = node match {
 
-    case Terminal(name, i, j) =>
+    case Terminal(name, i, j, input) =>
       val id = getId(node)
       sb ++= s"$id ${ROUNDED_RECTANGLE.format("black", escape(input.subString(i, j)))}\n"
       Some(Buffer(id))
 
-    case RuleNode(r, children) =>
+    case RuleNode(r, children, input) =>
       sb ++= s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", r.head)}\n"
       val ids = for (c <- children; x <- visit(c).toSeq; i <- x) yield i
       addEdge(node, ids)

@@ -28,11 +28,11 @@ class ToJavaCode(val input: Input) extends Visitor[Tree] with Id {
 
   override def visit(node: Tree): VisitResult[Unit] = node match {
 
-    case Terminal(name, i, j) =>
+    case Terminal(name, i, j, input) =>
       sb ++= s"""Tree t${getId(node)} = createTerminal($i, $j);\n"""
       None
 
-    case RuleNode(r, children) =>
+    case RuleNode(r, children, input) =>
       children.foreach(visit(_))
       val label = "list(" + children.map(c => "t" + getId(c)).mkString(", ") + ")"
       sb ++= s"""Tree t${getId(node)} = createRule($r, $label);\n"""

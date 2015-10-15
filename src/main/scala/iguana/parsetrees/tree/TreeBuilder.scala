@@ -1,7 +1,6 @@
 package iguana.parsetrees.tree
 
 import iguana.utils.input.Input
-//import scala.collection.mutable.Set
 
 /**
  * Represents an ambiguity branch
@@ -18,9 +17,9 @@ trait RuleType {
 }
 
 trait TreeBuilder[T] {
-  def terminalNode(l: Int, r: Int): T
-  def terminalNode(name: String, l: Int, r: Int): T
-  def nonterminalNode(ruleType: RuleType, children: Seq[T], l: Int, r: Int): T
+  def terminalNode(l: Int, r: Int, input: Input): T
+  def terminalNode(name: String, l: Int, r: Int, input: Input): T
+  def nonterminalNode(ruleType: RuleType, children: Seq[T], l: Int, r: Int, input: Input): T
   def ambiguityNode(children: Iterable[Branch[T]], l:Int, r:Int): T
   def branch(children: Seq[T]): Branch[T]
   def star(children: Seq[T]): T
@@ -40,11 +39,12 @@ class DefaultTreeBuilder(input: Input) extends TreeBuilder[Tree] {
 
   type T = Tree
 
-  override def terminalNode(l: Int, r: Int): Tree = Terminal(l, r)
+  override def terminalNode(l: Int, r: Int, input: Input): Tree = Terminal(l, r, input)
 
-  override def terminalNode(name: String, l: Int, r: Int): Tree = Terminal(name, l, r)
+  override def terminalNode(name: String, l: Int, r: Int, input: Input): Tree = Terminal(name, l, r, input)
 
-  override def nonterminalNode(ruleType: RuleType, children: Seq[Tree], l: Int, r: Int): Tree = RuleNode(ruleType, children)
+  override def nonterminalNode(ruleType: RuleType, children: Seq[Tree], l: Int, r: Int, input: Input): Tree =
+    RuleNode(ruleType, children, input)
 
   override def ambiguityNode(children: Iterable[Branch[Tree]], l: Int, r: Int): Tree = Amb(children.toSet[Branch[Tree]])
 
