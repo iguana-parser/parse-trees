@@ -5,7 +5,7 @@ import iguana.parsetrees.visitor._
 object SPPFToJavaCode {
 
   def get(node: SPPFNode): String = {
-    val toJavaCode = new ToJavaCode with Memoization[SPPFNode]
+    val toJavaCode = new ToJavaCode with SPPFMemoization
     toJavaCode.visit(node)
     toJavaCode.get
   }
