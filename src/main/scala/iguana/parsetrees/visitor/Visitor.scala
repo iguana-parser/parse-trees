@@ -96,10 +96,7 @@ trait SPPFMemoization extends Visitor[SPPFNode] {
         }
       }
 
-      case _ => {
-        val x = cache.getOrElseUpdate(node, super.visit(node))
-        x
-      }
+      case _ => cache.getOrElseUpdate(node, super.visit(node))
     }
   }
 }

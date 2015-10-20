@@ -83,7 +83,7 @@ trait NonPackedNode extends SPPFNode {
 class DummyNode extends NonPackedNode {
   def children = ListBuffer()
   def leftExtent = -1
-  def rightExtent = -1
+  def rightExtent = 0
   def slot: Any = "$"
   def isAmbiguous = false
 

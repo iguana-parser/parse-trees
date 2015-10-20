@@ -28,14 +28,14 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
 
   override type T = Any
 
-  case class StarList(l: Buffer[T])
-
   case class PlusList(l: Buffer[T])
+
+  case class EpsilonList(i: Int)
 
   override def visit(node: SPPFNode): VisitResult[T] = node match {
 
     case TerminalNode(slot, leftExtent, rightExtent, input) =>
-      if (leftExtent == rightExtent) Some(builder.epsilon(leftExtent))
+      if (leftExtent == rightExtent) Some(EpsilonList(leftExtent))
       else
       if (slot.terminalName == null) Some(builder.terminalNode(leftExtent, rightExtent, input))
       else Some(builder.terminalNode(slot.terminalName, leftExtent, rightExtent, input))
@@ -66,7 +66,7 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
   def makeList(v: Any): Buffer[T] = v match {
     case Unknown(label) => Buffer(builder.cycle(label))
     case None => Buffer()
-    case Some(StarList(Buffer(PlusList(l), r@_*))) => Buffer(builder.star(l ++ r))
+    case Some(EpsilonList(i)) => Buffer(builder.epsilon(i))
     case Some(PlusList(Buffer(PlusList(l), r@_*))) => Buffer(builder.plus(l ++ r))
     case Some(PlusList(l)) => Buffer(builder.plus(l))
     case Some(l: Buffer[T]) => l
@@ -75,7 +75,7 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
 
   def flattenStar(child: Any): Any = child match {
     // A* ::= epsilon
-    case Some(e: Epsilon) => builder.star(Buffer(e))
+    case Some(EpsilonList(i)) => builder.star(Buffer())
     // A* ::= A+
     case Some(PlusList(l)) => builder.star(l)
   }
@@ -117,11 +117,8 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
       case (None, None) => Buffer()
       case (None, y)    => Buffer(y)
       case (x, None)    => Buffer(x)
-      case (StarList(l), y)    => Buffer(builder.star(l)) :+ y
       case (PlusList(l), y)    => Buffer(PlusList(l :+ y))
       case (x, PlusList(l))    => merge(x, builder.plus(l))
-      case (x, StarList(Buffer(PlusList(l), r@_*)))  => merge(x, builder.star(l ++ r))
-      case (x, StarList(l))    => merge(x, builder.star(l))
       case (l: Buffer[Any], y) => l :+ y
       case (x, y)  => Buffer(x, y)
   }
