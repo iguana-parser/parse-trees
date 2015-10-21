@@ -80,18 +80,15 @@ trait NonPackedNode extends SPPFNode {
 	override def toString  = name + "," + leftExtent + "," + rightExtent
 }
 
-class DummyNode extends NonPackedNode {
-  def children = ListBuffer()
+class DummyNode(j: Int) extends NonPackedNode {
+  val children = ListBuffer.empty
   def leftExtent = -1
-  def rightExtent = 0
-  def slot: Any = "$"
+  def rightExtent = j
+  def slot: Any = s"$$(-1, $j)"
   def isAmbiguous = false
 
-  override def deepEquals(other: SPPFNode, visited: Set[SPPFNode]): Boolean = other == DummyNode.getInstance
-}
-
-object DummyNode {
-  val getInstance = new DummyNode
+  override def deepEquals(other: SPPFNode, visited: Set[SPPFNode]): Boolean =
+    throw new RuntimeException("Dummy nodes should never end up in the final SPPF.")
 }
 
 abstract class NonterminalOrIntermediateNode(child: PackedNode) extends NonPackedNode {
