@@ -2,10 +2,9 @@
 package iguana.parsetrees.tree
 
 import iguana.parsetrees.visitor._
-import iguana.utils.input.Input
 import iguana.utils.visualization.GraphVizUtil._
 
-import scala.collection.mutable.{Buffer, StringBuilder, Set}
+import scala.collection.mutable.{Buffer, StringBuilder}
 
 object TreeVisualization {
 
@@ -60,7 +59,7 @@ class TreeToDot extends Visitor[Tree] with Id {
 
     case Cycle(label) =>
       val id = getId(node)
-      sb ++= s"$id ${CIRCLE.format("red", "Cycle", label)}\n"
+      sb ++= s"$id ${CIRCLE.format("red", label, "")}\n"
       Some(Buffer(id))
 
     case Star(children) =>

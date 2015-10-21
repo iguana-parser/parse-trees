@@ -6,6 +6,7 @@ import iguana.utils.input.Input
  * Represents an ambiguity branch
  */
 trait Branch[T] {
+  def ruleType: RuleType
   def children: Seq[T]
   def leftExtent: Int
   def rightExtent: Int
@@ -21,7 +22,7 @@ trait TreeBuilder[T] {
   def terminalNode(name: String, l: Int, r: Int, input: Input): T
   def nonterminalNode(ruleType: RuleType, children: Seq[T], l: Int, r: Int, input: Input): T
   def ambiguityNode(children: Iterable[Branch[T]], l:Int, r:Int): T
-  def branch(children: Seq[T]): Branch[T]
+  def branch(r: RuleType, children: Seq[T]): Branch[T]
   def star(children: Seq[T]): T
   def plus(children: Seq[T]): T
   def alt(l: Seq[T]): T
@@ -48,7 +49,7 @@ class DefaultTreeBuilder(input: Input) extends TreeBuilder[Tree] {
 
   override def ambiguityNode(children: Iterable[Branch[Tree]], l: Int, r: Int): Tree = Amb(children.toSet[Branch[Tree]])
 
-  override def branch(children: Seq[Tree]): Branch[Tree] = TreeBranch(children)
+  override def branch(r: RuleType, children: Seq[Tree]): Branch[Tree] = TreeBranch(r, children)
 
   override def cycle(label: String) = Cycle(label)
 
