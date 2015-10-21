@@ -56,7 +56,7 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
 
     case IntermediateNode(slot, leftExtent, rightExtent, children) =>
       if (children.size > 1) // Ambiguous node
-        Some(builder.ambiguityNode(children.map(p => builder.branch(p.rule, makeList(visit(p.leftChild)))), leftExtent, rightExtent))
+        Some(builder.ambiguityNode(children.map(p => builder.branch(p.rule, merge(p).get)), leftExtent, rightExtent))
       else
         merge(children.head)
 
