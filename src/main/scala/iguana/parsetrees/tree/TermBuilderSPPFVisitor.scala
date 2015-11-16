@@ -46,11 +46,11 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
       } else {
         n.slot.nodeType match {
           case NonterminalNodeType.Basic => Some(builder.nonterminalNode(child.rule, makeList(visit(child.leftChild)), n.leftExtent, n.rightExtent, input))
-          case NonterminalNodeType.Star => Some(flattenStar(visit(child.leftChild)))
-          case NonterminalNodeType.Plus => Some(flattenPlus(visit(child.leftChild)))
-          case NonterminalNodeType.Opt => Some(builder.opt(makeList(visit(child.leftChild)).head))
-          case NonterminalNodeType.Seq => Some(builder.group(makeList(visit(child.leftChild))))
-          case NonterminalNodeType.Alt => Some(builder.alt(makeList(visit(child.leftChild))))
+          case NonterminalNodeType.Star  => Some(flattenStar(visit(child.leftChild)))
+          case NonterminalNodeType.Plus  => Some(flattenPlus(visit(child.leftChild)))
+          case NonterminalNodeType.Opt   => Some(builder.opt(makeList(visit(child.leftChild)).head))
+          case NonterminalNodeType.Seq   => Some(builder.group(makeList(visit(child.leftChild))))
+          case NonterminalNodeType.Alt   => Some(builder.alt(makeList(visit(child.leftChild))))
         }
       }
 
@@ -78,17 +78,17 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
     case Some(EpsilonList(i)) => builder.star(Buffer())
     // A* ::= A+
     case Some(PlusList(l))    => builder.star(l)
-    //
+    // For cases where A* is ambiguous
     case Some(a: Amb)         => a
   }
 
   def flattenPlus(child: Any): Any = child match {
-
     // A+ ::= A+ A
     case Some(Buffer(PlusList(l), r@_*)) => PlusList(l ++ r)
 
     // A+ ::= A
     case Some(l: Buffer[Any]) => PlusList(l)
+
     case Some(x) => PlusList(Buffer(x))
   }
 

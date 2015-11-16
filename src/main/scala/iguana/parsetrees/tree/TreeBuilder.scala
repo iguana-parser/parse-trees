@@ -1,6 +1,7 @@
 package iguana.parsetrees.tree
 
 import iguana.utils.input.Input
+import iguana.parsetrees.slot.Action
 
 /**
  * Represents an ambiguity branch
@@ -15,6 +16,8 @@ trait Branch[T] {
 trait RuleType {
   def head: String
   def body: java.util.List[String]
+  def action: Action
+  def position: Int
 }
 
 trait TreeBuilder[T] {
