@@ -14,6 +14,7 @@ trait Branch[T] {
 
 trait RuleType {
   def head: String
+  def label: String
   def body: java.util.List[String]
 }
 
