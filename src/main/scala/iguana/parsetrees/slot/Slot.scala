@@ -18,9 +18,8 @@ import iguana.parsetrees.tree.RuleType
 
 trait Slot
 
-trait EndSlot extends Slot {
+trait PackedNodeSlot extends Slot {
   def ruleType: RuleType
-  def action: Action
 }
 
 trait TerminalSlot extends Slot {
@@ -34,3 +33,5 @@ trait NonterminalSlot extends Slot {
 trait Action {
   def apply(a: Any): Any
 }
+
+case object DummySlot extends Slot

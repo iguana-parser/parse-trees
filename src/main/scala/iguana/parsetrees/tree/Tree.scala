@@ -34,6 +34,11 @@ case class RuleNode(val r: RuleType, val ts: Seq[Tree], input: Input) extends Tr
 case class TreeBranch(ruleType: RuleType, children: Seq[Tree]) extends Branch[Tree] {
   override def leftExtent = children.head.leftExtent
   override def rightExtent = children.last.rightExtent
+
+  override def equals(o: Any) = o match {
+    case TreeBranch(r, l) => l == children
+    case _                => false
+  }
 }
 
 case class Amb(ts: Set[Branch[Tree]]) extends Tree {
