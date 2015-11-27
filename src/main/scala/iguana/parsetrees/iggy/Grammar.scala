@@ -23,6 +23,8 @@ trait Grammar {
     def code() = ???
     def term(name: Object): Object
   }
+  
+  class Pair[X,Y](val x: X, val y: Y)
 
   def build(term: Tree, b: Builder): Object = {
     term match {
@@ -30,11 +32,23 @@ trait Grammar {
         t.head.toLowerCase() match {
           case "definition" => b.grammar(build(children.head, b).asInstanceOf[java.util.List[Object]])
           case "tag"        => build(children.head, b)
-          case "rule"       => val l = build(children, b); 
+          case "rule"       => val l = build(children, b);
+                               
                                if (l.size() == 2) return b.rule(l.get(0), l.get(2))
                                else return b.rule(l.get(0), l.get(1), l.get(2), l.get(4))
           case "body"       => skip(build(children.head, b))
-          case "alternate"  =>
+          case "alternate"  => val x = new java.util.ArrayList[Object]
+                               val y = new java.util.ArrayList[String]
+                               if (children.size == 1) 
+                                 x.add(build(children.head, b)) 
+                               else {
+                                 val l = build(children, b)
+                                 val snd = skip(l.get(2).asInstanceOf[java.util.List[Object]])
+                                 x.add(l.get(1))
+                                 x.addAll(snd)
+                                 y.add(l.get(4).asInstanceOf[String])
+                               }
+                               return new Pair(x,y)
           case "sequence"   =>
           
           
@@ -77,28 +91,30 @@ trait Grammar {
   }
   
   def build(children: Seq[Tree], b: Builder): java.util.List[Object] = {
-    val l = new java.util.ArrayList[Object]()
+    val l = new java.util.ArrayList[Object]
     var i = 0
     children.foreach { child => if (i==0||i%2==0) l.add(build(child, b)); i = i + 1 } // Skip layout
     l
   }
   
   def skip(obj: Object): java.util.List[java.util.List[Object]] = {
-    val list: Iterable[java.util.List[Object]] = obj.asInstanceOf[java.util.List[java.util.List[Object]]]
-    val result = new java.util.ArrayList[java.util.List[Object]]()
-    var i,j = 0
-    list foreach {el =>
-      if (i==0||i%2==0) {
-        j = 0
-        val l: Iterable[Object] = el
-        val res = new java.util.ArrayList[Object]();
-        result.add(res)
-        l foreach { o => 
-          if (j==0||j%2==0) res.add(o) }}
+    val result = new java.util.ArrayList[java.util.List[Object]]
+    var i = 0
+    asScalaBuffer(obj.asInstanceOf[java.util.List[Object]]) foreach { el =>
+      if (i==0||i%2==0) result.add(skip(el.asInstanceOf[java.util.List[Object]])) // Skip delimiters
     }
     result
   }
   
-  def rules(term: Tree) = term match { case Plus(trees) => }
+  def skip(obj: java.util.List[Object]): java.util.List[Object] = {
+    val l = new java.util.ArrayList[Object]
+    var i = 0
+    asScalaBuffer(obj) foreach { o => if (i==0||i%2==0) l.add(o)} // Skip delimiters
+    l
+  }
+  
+  def flatten() = {
+    ???
+  }
   
 }
