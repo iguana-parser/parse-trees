@@ -49,9 +49,18 @@ trait Grammar {
                                  y.add(l.get(4).asInstanceOf[String])
                                }
                                return new Pair(x,y)
-          case "sequence"   =>
-          
-          
+          case "sequence"   => val l = build(children, b)
+                               val x = new java.util.ArrayList[Object]
+                               val y = new java.util.ArrayList[Object]
+                               if (children.size == 3) { 
+                                 x.add(l.get(0))
+                                 x.addAll(l.get(1).asInstanceOf[java.util.List[Object]])
+                               } else { 
+                                 x.add(l.get(0))
+                                 x.addAll(l.get(1).asInstanceOf[java.util.List[Object]])
+                                 x.addAll(l.get(2).asInstanceOf[java.util.List[Object]])
+                               }
+                               return new Pair(x, y)
           case "symbol" =>
           case "parameters" =>
           case "arguments" =>
