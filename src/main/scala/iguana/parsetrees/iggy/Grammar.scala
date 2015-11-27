@@ -12,11 +12,16 @@ trait Grammar {
     def grammar(rules: java.util.List[Object]): Object
     def rule(tag: Object, name: Object, parameters: Object, body: Object): Object
     def rule(name: Object, body: Object): Object
+    def precGs(ss: java.util.List[Object]): Object
+    def precG(ss: java.util.List[Object]): Object
+    def assocG(ss: java.util.List[Object]): Object
+    def body(ss: java.util.List[Object]): Object
+    def syms(ss: java.util.List[Object]): Object
     def star(s: Object): Object
     def plus(s: Object): Object
     def opt(s: Object): Object
-    def seq(s: java.util.List[Object]): Object 
-    def alt(s: java.util.List[Object]): Object
+    def seqG(s: java.util.List[Object]): Object 
+    def altG(s: java.util.List[Object]): Object
     def call(s: Object, args: java.util.List[Object]): Object
     def nont(name: Object): Object
     def cond() = ???
@@ -32,39 +37,41 @@ trait Grammar {
         t.head.toLowerCase() match {
           case "definition" => b.grammar(build(children.head, b).asInstanceOf[java.util.List[Object]])
           case "tag"        => build(children.head, b)
-          case "rule"       => val l = build(children, b);
-                               
+          case "rule"       => val l = buildL(children, b, flatten = false);
                                if (l.size() == 2) return b.rule(l.get(0), l.get(2))
                                else return b.rule(l.get(0), l.get(1), l.get(2), l.get(4))
-          case "body"       => skip(build(children.head, b))
-          case "alternate"  => val x = new java.util.ArrayList[Object]
-                               val y = new java.util.ArrayList[String]
-                               if (children.size == 1) 
-                                 x.add(build(children.head, b)) 
-                               else {
-                                 val l = build(children, b)
-                                 val snd = skip(l.get(2).asInstanceOf[java.util.List[Object]])
-                                 x.add(l.get(1))
-                                 x.addAll(snd)
-                                 y.add(l.get(4).asInstanceOf[String])
+          case "body"       => return b.precGs(skip(build(children.head, b).asInstanceOf[java.util.List[Object]], i => i==0||i%2==0))
+          case "alternates" => return b.precG(skip(build(children.head, b).asInstanceOf[java.util.List[Object]], i => i==0||i%2==0))
+          case "alternate"  => if (children.size == 1) return build(children.head, b)
+                               else return b.assocG(skip(buildL(children, b), i => i!=0&&i%2!=0))
+          case "sequence"   => return b.body(buildL(children, b))
+          case "symbol"     => t.label.toLowerCase() match {
+                                 case "star"        => return b.star(build(children.head, b))
+                                 case "plus"        => return b.plus(build(children.head, b))
+                                 case "option"      => return b.opt(build(children.head, b))
+                                 case "sequence"    => val l = buildL(children, b); l.remove(0); l.remove(l.size() - 1)
+                                                       return b.seqG(l)
+                                 case "alternation" => return b.altG(skip(buildL(children, b), i => i!=0&&i%2!=0))
+                                 case "call" =>
+                                 case "variable" =>
+                                 case "labeled" =>
+                                 case "constraint" =>
+                                 case "binding" =>
+                                 case "precede" =>
+                                 case "notprecede" =>
+                                 case "follow" =>
+                                 case "notfollow" =>
+                                 case "exclude" =>
+                                 case "except" =>
+                                 case "regex" =>
+                                 case "nonterminal" =>
+                                 case "string" =>
+                                 case "character" =>
                                }
-                               return new Pair(x,y)
-          case "sequence"   => val l = build(children, b)
-                               val x = new java.util.ArrayList[Object]
-                               val y = new java.util.ArrayList[Object]
-                               if (children.size == 3) { 
-                                 x.add(l.get(0))
-                                 x.addAll(l.get(1).asInstanceOf[java.util.List[Object]])
-                               } else { 
-                                 x.add(l.get(0))
-                                 x.addAll(l.get(1).asInstanceOf[java.util.List[Object]])
-                                 x.addAll(l.get(2).asInstanceOf[java.util.List[Object]])
-                               }
-                               return new Pair(x, y)
-          case "symbol" =>
+          case "symbols"    => return b.syms(build(children.head, b).asInstanceOf[java.util.List[Object]])
           case "parameters" =>
-          case "arguments" =>
-          
+          case "arguments"  => val l = buildL(children, b); l.remove(0); l.remove(l.size() - 1)
+                               return skip(l.asInstanceOf[java.util.List[Object]], i => i==0||i%2==0)
           case "expression" =>
           case "return" =>
           case "binding" =>  
@@ -83,14 +90,22 @@ trait Grammar {
             
           case "attribute" =>
           case "associativity" =>
+          case "altlabel" =>  
         }
         
-      case Plus(children) => return build(children, b)
-      case Star(children) => return build(children, b)
-      case Opt(child) => val l = new java.util.ArrayList[Object](); l.add(build(child, b)); return l
+      case Plus(children)  => return buildL(children, b)
+      case Star(children)  => return buildL(children, b)
+      case Opt(child)      => val l = new java.util.ArrayList[Object]
+                              val x = build(child, b)
+                              if (x.isInstanceOf[java.util.List[_]])
+                                l.addAll(x.asInstanceOf[java.util.List[Object]])
+                              else
+                                l.add(x)
+                              return l
+      case Group(children) => return buildL(children, b)
       
       case Terminal(name, _, _, _) => return name
-      case Epsilon(_) => return ""     
+      case Epsilon(_) => return ""
         
       case _ => 
         throw new RuntimeException("Unknown node: " + term);
@@ -99,31 +114,28 @@ trait Grammar {
     ???
   }
   
-  def build(children: Seq[Tree], b: Builder): java.util.List[Object] = {
+  def buildL(children: Seq[Tree], b: Builder, flatten: Boolean = true): java.util.List[Object] = {
     val l = new java.util.ArrayList[Object]
     var i = 0
-    children.foreach { child => if (i==0||i%2==0) l.add(build(child, b)); i = i + 1 } // Skip layout
+    children.foreach { child => // Skip layout 
+      if (i==0||i%2==0) {
+        val x = build(child, b)
+        if (flatten && x.isInstanceOf[java.util.List[_]])
+          l.addAll(x.asInstanceOf[java.util.List[Object]])
+        else
+          l.add(x)
+      }
+      i = i + 1 
+    } 
     l
   }
   
-  def skip(obj: Object): java.util.List[java.util.List[Object]] = {
-    val result = new java.util.ArrayList[java.util.List[Object]]
-    var i = 0
-    asScalaBuffer(obj.asInstanceOf[java.util.List[Object]]) foreach { el =>
-      if (i==0||i%2==0) result.add(skip(el.asInstanceOf[java.util.List[Object]])) // Skip delimiters
-    }
-    result
-  }
-  
-  def skip(obj: java.util.List[Object]): java.util.List[Object] = {
+  def skip(obj: java.util.List[Object], p: Int => Boolean): java.util.List[Object] = {
+    if (obj.size() <= 1) return obj
     val l = new java.util.ArrayList[Object]
     var i = 0
-    asScalaBuffer(obj) foreach { o => if (i==0||i%2==0) l.add(o)} // Skip delimiters
+    asScalaBuffer(obj) foreach { o => if (p(i)) l.add(o); i = i + 1 } // Skip delimiters
     l
-  }
-  
-  def flatten() = {
-    ???
   }
   
 }
