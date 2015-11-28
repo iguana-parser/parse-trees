@@ -49,11 +49,13 @@ trait Grammar {
     def and(l: Object, r: Object): Object
     def or(l: Object, r: Object): Object
     def name(n: Object): Object
+    def regName(n: Object): Object
     def number(n: Object): Object
     def nont(name: Object): Object
     def term(name: Object): Object
+    def range(c: Object): Object
     def range(l: Object, r: Object): Object
-    def charclass(rs: java.util.List[Object]): Object
+    def charclass(rs: java.util.List[Object], kind: String): Object
   }
   
   def build(term: Tree, b: Builder): Object = {
@@ -93,9 +95,10 @@ trait Grammar {
                                  
                                  case "nonterminal" => return b.nont(build(children.head, b))
                                  
-                                 case "regex"       => 
+                                 case "regex"       => return build(children.tail.tail.head, b)
                                  case "string"      => return b.term(build(children.head, b))
                                  case "character"   => return b.term(build(children.head, b))
+                                 case _             => throw new RuntimeException("Unknown type of symbol: " + t.label)
                                }
           case "symbols"    => return b.syms(build(children.head, b).asInstanceOf[java.util.List[Object]])
           case "parameters" => val l = buildL(children, b); l.remove(0); l.remove(l.size() - 1)
@@ -103,25 +106,32 @@ trait Grammar {
           case "arguments"  => val l = buildL(children, b); l.remove(0); l.remove(l.size() - 1)
                                return skip(l.asInstanceOf[java.util.List[Object]], i => i==0||i%2==0)
           case "expression" => t.label.toLowerCase() match {
-                                 case "call"           => 
-                                 case "multiplication" =>
-                                 case "division"       =>
-                                 case "plus"           =>
-                                 case "minus"          =>
-                                 case "greatereq"      =>
-                                 case "lesseq"         =>
-                                 case "greater"        =>
-                                 case "less"           =>
-                                   
+                                 case "call"           => return b.callE(build(children.head, b), build(children.tail.head, b).asInstanceOf[java.util.List[Object]])
+                                 case "multiplication" => return b.mult(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "division"       => return b.div(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "plus"           => return b.plus(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "minus"          => return b.minus(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "greatereq"      => return b.greatereq(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "lesseq"         => return b.lesseq(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "greater"        => return b.greater(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "less"           => return b.less(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "equal"          => return b.equal(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "notequal"       => return b.notequal(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "and"            => return b.and(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "or"             => return b.or(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "name"           => return b.name(build(children.head, b))
+                                 case "number"         => return b.name(build(children.head, b))
+                                 case "bracket"        => return build(children.tail.head, b)
+                                 case _                => throw new RuntimeException("Unknown type of expression: " + t.label)
                                }
           case "return"     => return build(children.tail.head, b)
           case "binding"    => t.label.toLowerCase() match {
                                  case "assignment"  => return b.assign(build(children.head, b), build(children.tail.tail.head, b))
                                  case "declaration" => return b.decl(build(children.tail.head, b), build(children.tail.tail.tail.head, b))
-                               }
-          
-          case "regexbody"     =>  
-          case "regexsequence" =>  
+                                 case _             => throw new RuntimeException("Unknown type of binding: " + t.label)
+                               }          
+          case "regexbody"     => b.regAltG(skip(build(children.head, b).asInstanceOf[java.util.List[Object]], i => i==0||i%2==0)) 
+          case "regexsequence" => b.regSeqG(build(children.head, b).asInstanceOf[java.util.List[Object]]) 
           case "regex"         => t.label.toLowerCase() match {
                                     case "star"        => return b.regStar(build(children.head, b))
                                     case "plus"        => return b.regPlus(build(children.head, b))
@@ -130,23 +140,28 @@ trait Grammar {
                                                           return b.regSeqG(l)
                                     case "alternation" => return b.regAltG(skip(buildL(children, b), i => i!=0&&i%2!=0))
                                     case "bracket"     => return build(children.tail.head, b)
-                                    case "nonterminal" => return build(children.head, b)
-                                    case "charclass"   => 
+                                    case "nonterminal" => return b.regName(build(children.head, b))
+                                    case "charclass"   => return build(children.head, b)
                                     case "string"      => return b.term(build(children.head, b))
                                     case "char"        => return b.term(build(children.head, b))
+                                    case _             => throw new RuntimeException("Unknown type of regex: " + t.label)
                                   }
-          case "charclass"     =>
-          case "range"         =>
-          
+          case "charclass"     => t.label.toLowerCase() match {
+                                    case "thesechars"    => return b.charclass(build(children.tail.head, b).asInstanceOf[java.util.List[Object]], "")
+                                    case "notthesechars" => return b.charclass(build(children.tail.head, b).asInstanceOf[java.util.List[Object]], "not")
+                                  }
+          case "range"         => if (children.size == 1) return b.range(build(children.head, b))
+                                  else return b.range(build(children.head, b), build(children.tail.head, b))
+
           case "identifier" => return build(children.head, b)
           case "nontname"   => return build(children.head, b)
           case "regexname"  => return build(children.head, b)
           case "varname"    => return build(children.head, b)
           case "label"      => return build(children.head, b)
             
-          case "attribute"  => return build(children.head, b)
+          case "attribute"     => return build(children.head, b)
           case "associativity" => return build(children.head, b)
-          case "altlabel"   => 
+          case "altlabel"      => return build(children.tail.head, b)
         }
         
       case Plus(children)  => return buildL(children, b)
@@ -167,7 +182,6 @@ trait Grammar {
         throw new RuntimeException("Unknown node: " + term);
     }
     
-    ???
   }
   
   def buildL(children: Seq[Tree], b: Builder, flatten: Boolean = true): java.util.List[Object] = {
