@@ -79,7 +79,7 @@ trait Builder {
   def range(l: Object, r: Object): Object
   def charclass(rs: java.util.List[Object], kind: String): Object
   def string(s: Object): Object
-  def char(c: Object): Object
+  def character(c: Object): Object
 }
 
 object Grammar {
@@ -88,8 +88,8 @@ object Grammar {
     term match {
       case RuleNode(t, children: Seq[Tree], _) =>       
         t.head.toLowerCase() match {
-          case "definition" => b.grammar(build(children.head, b).asInstanceOf[java.util.List[Object]])
-          case "tag"        => build(children.head, b)
+          case "definition" => return b.grammar(build(children.head, b).asInstanceOf[java.util.List[Object]])
+          case "tag"        => return build(children.head, b)
           case "rule"       => val l = buildL(children, b, flatten = false);
                                t.label.toLowerCase() match {
                                  case "syntax" => return b.rule(l.get(0).asInstanceOf[java.util.List[Object]], 
@@ -129,7 +129,7 @@ object Grammar {
                                  
                                  case "regex"       => return build(children.tail.tail.head, b)
                                  case "string"      => return b.string(build(children.head, b))
-                                 case "character"   => return b.char(build(children.head, b))
+                                 case "character"   => return b.character(build(children.head, b))
                                  case _             => throw new RuntimeException("Unknown type of symbol: " + t.label)
                                }
           case "symbols"    => return b.syms(build(children.head, b).asInstanceOf[java.util.List[Object]])
@@ -162,8 +162,8 @@ object Grammar {
                                  case "declaration" => return b.decl(build(children.tail.head, b), build(children.tail.tail.tail.head, b))
                                  case _             => throw new RuntimeException("Unknown type of binding: " + t.label)
                                }          
-          case "regexbody"     => b.regAltG(skip(build(children.head, b).asInstanceOf[java.util.List[Object]], i => i==0||i%2==0)) 
-          case "regexsequence" => b.regSeqG(build(children.head, b).asInstanceOf[java.util.List[Object]]) 
+          case "regexbody"     => return b.regAltG(skip(build(children.head, b).asInstanceOf[java.util.List[Object]], i => i==0||i%2==0)) 
+          case "regexsequence" => return b.regSeqG(build(children.head, b).asInstanceOf[java.util.List[Object]]) 
           case "regex"         => t.label.toLowerCase() match {
                                     case "star"        => return b.regStar(build(children.head, b))
                                     case "plus"        => return b.regPlus(build(children.head, b))
@@ -175,7 +175,7 @@ object Grammar {
                                     case "nonterminal" => return b.regName(build(children.head, b))
                                     case "charclass"   => return build(children.head, b)
                                     case "string"      => return b.string(build(children.head, b))
-                                    case "char"        => return b.char(build(children.head, b))
+                                    case "char"        => return b.character(build(children.head, b))
                                     case _             => throw new RuntimeException("Unknown type of regex: " + t.label)
                                   }
           case "charclass"     => t.label.toLowerCase() match {
@@ -202,13 +202,13 @@ object Grammar {
                               val x = build(child, b)
                               if (x.isInstanceOf[java.util.List[_]])
                                 l.addAll(x.asInstanceOf[java.util.List[Object]])
-                              else
+                              else if (!x.equals(None))
                                 l.add(x)
                               return l
       case Group(children) => return buildL(children, b)
       
-      case Terminal(name, _, _, _) => return name
-      case Epsilon(_) => return ""
+      case Terminal(_, i, j, input) => return input.subString(i, j)
+      case Epsilon(_) => return None
         
       case _ => 
         throw new RuntimeException("Unknown node: " + term);
