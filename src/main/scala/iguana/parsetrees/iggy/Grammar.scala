@@ -22,15 +22,40 @@ trait Grammar {
     def opt(s: Object): Object
     def seqG(s: java.util.List[Object]): Object 
     def altG(s: java.util.List[Object]): Object
-    def call(s: Object, args: java.util.List[Object]): Object
+    def regStar(s: Object): Object
+    def regPlus(s: Object): Object
+    def regOpt(s: Object): Object
+    def regSeqG(s: java.util.List[Object]): Object 
+    def regAltG(s: java.util.List[Object]): Object
+    def callS(s: Object, args: java.util.List[Object]): Object
+    def variable(name: Object, s: Object): Object
+    def label(name: Object, s: Object): Object
+    def restriction(s: Object, r: Object, kind: String): Object
+    def constraints(cs: java.util.List[Object]): Object
+    def bindings(ss: java.util.List[Object]): Object
+    def assign(name: Object, exp: Object): Object
+    def decl(name: Object, exp: Object): Object
+    def callE(s: Object, args: java.util.List[Object]): Object
+    def mult(l: Object, r: Object): Object
+    def div(l: Object, r: Object): Object
+    def plus(l: Object, r: Object): Object
+    def minus(l: Object, r: Object): Object
+    def greatereq(l: Object, r: Object): Object
+    def lesseq(l: Object, r: Object): Object
+    def greater(l: Object, r: Object): Object
+    def less(l: Object, r: Object): Object
+    def equal(l: Object, r: Object): Object
+    def notequal(l: Object, r: Object): Object
+    def and(l: Object, r: Object): Object
+    def or(l: Object, r: Object): Object
+    def name(n: Object): Object
+    def number(n: Object): Object
     def nont(name: Object): Object
-    def cond() = ???
-    def code() = ???
     def term(name: Object): Object
+    def range(l: Object, r: Object): Object
+    def charclass(rs: java.util.List[Object]): Object
   }
   
-  class Pair[X,Y](val x: X, val y: Y)
-
   def build(term: Tree, b: Builder): Object = {
     term match {
       case RuleNode(t, children: Seq[Tree], _) =>       
@@ -52,45 +77,76 @@ trait Grammar {
                                  case "sequence"    => val l = buildL(children, b); l.remove(0); l.remove(l.size() - 1)
                                                        return b.seqG(l)
                                  case "alternation" => return b.altG(skip(buildL(children, b), i => i!=0&&i%2!=0))
-                                 case "call" =>
-                                 case "variable" =>
-                                 case "labeled" =>
-                                 case "constraint" =>
-                                 case "binding" =>
-                                 case "precede" =>
-                                 case "notprecede" =>
-                                 case "follow" =>
-                                 case "notfollow" =>
-                                 case "exclude" =>
-                                 case "except" =>
-                                 case "regex" =>
-                                 case "nonterminal" =>
-                                 case "string" =>
-                                 case "character" =>
+                                 case "call"        => return b.callS(build(children.head, b), build(children.tail.head, b).asInstanceOf[java.util.List[Object]]) 
+                                 case "variable"    => return b.variable(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "labeled"     => return b.variable(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "constraint"  => val l = buildL(children, b); l.remove(0); l.remove(l.size() - 1)
+                                                       return b.constraints(skip(l.asInstanceOf[java.util.List[Object]], i => i==0||i%2==0))
+                                 case "binding"     => val l = buildL(children, b); l.remove(0); l.remove(l.size() - 1)
+                                                       return b.bindings(skip(l.asInstanceOf[java.util.List[Object]], i => i==0||i%2==0))
+                                 case "precede"     => return b.restriction(build(children.tail.tail.head, b), build(children.head, b), "p")
+                                 case "notprecede"  => return b.restriction(build(children.tail.tail.head, b), build(children.head, b), "np")
+                                 case "follow"      => return b.restriction(build(children.head, b), build(children.tail.tail.head, b), "f")
+                                 case "notfollow"   => return b.restriction(build(children.head, b), build(children.tail.tail.head, b), "nf")
+                                 case "exclude"     => return b.restriction(build(children.head, b), build(children.tail.tail.head, b), "xcld")
+                                 case "except"      => return b.restriction(build(children.head, b), build(children.tail.tail.head, b), "xpt")
+                                 
+                                 case "nonterminal" => return b.nont(build(children.head, b))
+                                 
+                                 case "regex"       => 
+                                 case "string"      => return b.term(build(children.head, b))
+                                 case "character"   => return b.term(build(children.head, b))
                                }
           case "symbols"    => return b.syms(build(children.head, b).asInstanceOf[java.util.List[Object]])
-          case "parameters" =>
+          case "parameters" => val l = buildL(children, b); l.remove(0); l.remove(l.size() - 1)
+                               return skip(l.asInstanceOf[java.util.List[Object]], i => i==0||i%2==0)
           case "arguments"  => val l = buildL(children, b); l.remove(0); l.remove(l.size() - 1)
                                return skip(l.asInstanceOf[java.util.List[Object]], i => i==0||i%2==0)
-          case "expression" =>
-          case "return" =>
-          case "binding" =>  
+          case "expression" => t.label.toLowerCase() match {
+                                 case "call"           => 
+                                 case "multiplication" =>
+                                 case "division"       =>
+                                 case "plus"           =>
+                                 case "minus"          =>
+                                 case "greatereq"      =>
+                                 case "lesseq"         =>
+                                 case "greater"        =>
+                                 case "less"           =>
+                                   
+                               }
+          case "return"     => return build(children.tail.head, b)
+          case "binding"    => t.label.toLowerCase() match {
+                                 case "assignment"  => return b.assign(build(children.head, b), build(children.tail.tail.head, b))
+                                 case "declaration" => return b.decl(build(children.tail.head, b), build(children.tail.tail.tail.head, b))
+                               }
           
-          case "regexbody"  =>  
+          case "regexbody"     =>  
           case "regexsequence" =>  
-          case "regex" =>
-          case "charclass" =>
-          case "range" =>
+          case "regex"         => t.label.toLowerCase() match {
+                                    case "star"        => return b.regStar(build(children.head, b))
+                                    case "plus"        => return b.regPlus(build(children.head, b))
+                                    case "option"      => return b.regOpt(build(children.head, b))
+                                    case "sequence"    => val l = buildL(children, b); l.remove(0); l.remove(l.size() - 1)
+                                                          return b.regSeqG(l)
+                                    case "alternation" => return b.regAltG(skip(buildL(children, b), i => i!=0&&i%2!=0))
+                                    case "bracket"     => return build(children.tail.head, b)
+                                    case "nonterminal" => return build(children.head, b)
+                                    case "charclass"   => 
+                                    case "string"      => return b.term(build(children.head, b))
+                                    case "char"        => return b.term(build(children.head, b))
+                                  }
+          case "charclass"     =>
+          case "range"         =>
           
-          case "identifier" =>
-          case "nontname" =>
-          case "regexname" =>
-          case "varname" =>
-          case "label" =>
+          case "identifier" => return build(children.head, b)
+          case "nontname"   => return build(children.head, b)
+          case "regexname"  => return build(children.head, b)
+          case "varname"    => return build(children.head, b)
+          case "label"      => return build(children.head, b)
             
-          case "attribute" =>
-          case "associativity" =>
-          case "altlabel" =>  
+          case "attribute"  => return build(children.head, b)
+          case "associativity" => return build(children.head, b)
+          case "altlabel"   => 
         }
         
       case Plus(children)  => return buildL(children, b)
