@@ -6,57 +6,57 @@ import scala.collection.JavaConversions._
 /**
  * @author Anastasia Izmaylova
  */
-trait Grammar {
-  
-  trait Builder {
-    def grammar(rules: java.util.List[Object]): Object
-    def rule(tag: Object, name: Object, parameters: Object, body: Object): Object
-    def rule(name: Object, body: Object): Object
-    def precGs(ss: java.util.List[Object]): Object
-    def precG(ss: java.util.List[Object]): Object
-    def assocG(ss: java.util.List[Object]): Object
-    def body(ss: java.util.List[Object]): Object
-    def syms(ss: java.util.List[Object]): Object
-    def star(s: Object): Object
-    def plus(s: Object): Object
-    def opt(s: Object): Object
-    def seqG(s: java.util.List[Object]): Object 
-    def altG(s: java.util.List[Object]): Object
-    def regStar(s: Object): Object
-    def regPlus(s: Object): Object
-    def regOpt(s: Object): Object
-    def regSeqG(s: java.util.List[Object]): Object 
-    def regAltG(s: java.util.List[Object]): Object
-    def callS(s: Object, args: java.util.List[Object]): Object
-    def variable(name: Object, s: Object): Object
-    def label(name: Object, s: Object): Object
-    def restriction(s: Object, r: Object, kind: String): Object
-    def constraints(cs: java.util.List[Object]): Object
-    def bindings(ss: java.util.List[Object]): Object
-    def assign(name: Object, exp: Object): Object
-    def decl(name: Object, exp: Object): Object
-    def callE(s: Object, args: java.util.List[Object]): Object
-    def mult(l: Object, r: Object): Object
-    def div(l: Object, r: Object): Object
-    def plus(l: Object, r: Object): Object
-    def minus(l: Object, r: Object): Object
-    def greatereq(l: Object, r: Object): Object
-    def lesseq(l: Object, r: Object): Object
-    def greater(l: Object, r: Object): Object
-    def less(l: Object, r: Object): Object
-    def equal(l: Object, r: Object): Object
-    def notequal(l: Object, r: Object): Object
-    def and(l: Object, r: Object): Object
-    def or(l: Object, r: Object): Object
-    def name(n: Object): Object
-    def regName(n: Object): Object
-    def number(n: Object): Object
-    def nont(name: Object): Object
-    def term(name: Object): Object
-    def range(c: Object): Object
-    def range(l: Object, r: Object): Object
-    def charclass(rs: java.util.List[Object], kind: String): Object
-  }
+trait Builder {
+  def grammar(rules: java.util.List[Object]): Object
+  def rule(tag: java.util.List[Object], name: Object, parameters: java.util.List[Object], body: java.util.List[Object]): Object
+  def rule(name: Object, body: Object): Object
+  def precGs(ss: java.util.List[Object]): Object
+  def precG(ss: java.util.List[Object]): Object
+  def assocG(ss: java.util.List[Object]): Object
+  def body(ss: java.util.List[Object]): Object
+  def syms(ss: java.util.List[Object]): Object
+  def star(s: Object): Object
+  def plus(s: Object): Object
+  def opt(s: Object): Object
+  def seqG(s: java.util.List[Object]): Object 
+  def altG(s: java.util.List[Object]): Object
+  def regStar(s: Object): Object
+  def regPlus(s: Object): Object
+  def regOpt(s: Object): Object
+  def regSeqG(s: java.util.List[Object]): Object 
+  def regAltG(s: java.util.List[Object]): Object
+  def callS(s: Object, args: java.util.List[Object]): Object
+  def variable(name: Object, s: Object): Object
+  def label(name: Object, s: Object): Object
+  def restriction(s: Object, r: Object, kind: String): Object
+  def constraints(cs: java.util.List[Object]): Object
+  def bindings(ss: java.util.List[Object]): Object
+  def assign(name: Object, exp: Object): Object
+  def decl(name: Object, exp: Object): Object
+  def callE(s: Object, args: java.util.List[Object]): Object
+  def mult(l: Object, r: Object): Object
+  def div(l: Object, r: Object): Object
+  def plus(l: Object, r: Object): Object
+  def minus(l: Object, r: Object): Object
+  def greatereq(l: Object, r: Object): Object
+  def lesseq(l: Object, r: Object): Object
+  def greater(l: Object, r: Object): Object
+  def less(l: Object, r: Object): Object
+  def equal(l: Object, r: Object): Object
+  def notequal(l: Object, r: Object): Object
+  def and(l: Object, r: Object): Object
+  def or(l: Object, r: Object): Object
+  def name(n: Object): Object
+  def regName(n: Object): Object
+  def number(n: Object): Object
+  def nont(name: Object): Object
+  def term(name: Object): Object
+  def range(c: Object): Object
+  def range(l: Object, r: Object): Object
+  def charclass(rs: java.util.List[Object], kind: String): Object
+}
+
+object Grammar {
   
   def build(term: Tree, b: Builder): Object = {
     term match {
@@ -65,8 +65,14 @@ trait Grammar {
           case "definition" => b.grammar(build(children.head, b).asInstanceOf[java.util.List[Object]])
           case "tag"        => build(children.head, b)
           case "rule"       => val l = buildL(children, b, flatten = false);
-                               if (l.size() == 2) return b.rule(l.get(0), l.get(2))
-                               else return b.rule(l.get(0), l.get(1), l.get(2), l.get(4))
+                               t.label.toLowerCase() match {
+                                 case "syntax" => return b.rule(l.get(0).asInstanceOf[java.util.List[Object]], 
+                                                  l.get(1), 
+                                                  l.get(2).asInstanceOf[java.util.List[Object]], 
+                                                  l.get(4).asInstanceOf[java.util.List[Object]])
+                                 case "regex"  => return b.rule(l.get(1), l.get(3))
+                                 case _        => throw new RuntimeException("Unknown type of rule: " + t.label)
+                               }
           case "body"       => return b.precGs(skip(build(children.head, b).asInstanceOf[java.util.List[Object]], i => i==0||i%2==0))
           case "alternates" => return b.precG(skip(build(children.head, b).asInstanceOf[java.util.List[Object]], i => i==0||i%2==0))
           case "alternate"  => if (children.size == 1) return build(children.head, b)
