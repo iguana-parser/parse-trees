@@ -75,10 +75,11 @@ trait Builder {
   def regName(n: Object): Object
   def number(n: Object): Object
   def nont(name: Object): Object
-  def term(name: Object): Object
   def range(c: Object): Object
   def range(l: Object, r: Object): Object
   def charclass(rs: java.util.List[Object], kind: String): Object
+  def string(s: Object): Object
+  def char(c: Object): Object
 }
 
 object Grammar {
@@ -127,8 +128,8 @@ object Grammar {
                                  case "nonterminal" => return b.nont(build(children.head, b))
                                  
                                  case "regex"       => return build(children.tail.tail.head, b)
-                                 case "string"      => return b.term(build(children.head, b))
-                                 case "character"   => return b.term(build(children.head, b))
+                                 case "string"      => return b.string(build(children.head, b))
+                                 case "character"   => return b.char(build(children.head, b))
                                  case _             => throw new RuntimeException("Unknown type of symbol: " + t.label)
                                }
           case "symbols"    => return b.syms(build(children.head, b).asInstanceOf[java.util.List[Object]])
@@ -173,8 +174,8 @@ object Grammar {
                                     case "bracket"     => return build(children.tail.head, b)
                                     case "nonterminal" => return b.regName(build(children.head, b))
                                     case "charclass"   => return build(children.head, b)
-                                    case "string"      => return b.term(build(children.head, b))
-                                    case "char"        => return b.term(build(children.head, b))
+                                    case "string"      => return b.string(build(children.head, b))
+                                    case "char"        => return b.char(build(children.head, b))
                                     case _             => throw new RuntimeException("Unknown type of regex: " + t.label)
                                   }
           case "charclass"     => t.label.toLowerCase() match {
