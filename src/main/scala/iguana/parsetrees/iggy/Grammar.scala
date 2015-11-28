@@ -10,7 +10,6 @@ trait Builder {
   def grammar(rules: java.util.List[Object]): Object
   def rule(tag: java.util.List[Object], name: Object, parameters: java.util.List[Object], body: java.util.List[Object]): Object
   def rule(name: Object, body: Object): Object
-  def precGs(ss: java.util.List[Object]): Object
   def precG(ss: java.util.List[Object]): Object
   def assocG(ss: java.util.List[Object]): Object
   def body(ss: java.util.List[Object]): Object
@@ -73,7 +72,7 @@ object Grammar {
                                  case "regex"  => return b.rule(l.get(1), l.get(3))
                                  case _        => throw new RuntimeException("Unknown type of rule: " + t.label)
                                }
-          case "body"       => return b.precGs(skip(build(children.head, b).asInstanceOf[java.util.List[Object]], i => i==0||i%2==0))
+          case "body"       => return skip(build(children.head, b).asInstanceOf[java.util.List[Object]], i => i==0||i%2==0)
           case "alternates" => return b.precG(skip(build(children.head, b).asInstanceOf[java.util.List[Object]], i => i==0||i%2==0))
           case "alternate"  => if (children.size == 1) return build(children.head, b)
                                else return b.assocG(skip(buildL(children, b), i => i!=0&&i%2!=0))
