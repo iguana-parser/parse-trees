@@ -39,42 +39,63 @@ object TermTraversal {
   
   def build(term: Tree, b: Actions): Object = {
     term match {
-      case RuleNode(t, ns, _) => if (t.label == null || t.label.isEmpty())
-                                   return buildL(ns, b, flatten = true)
-                                 else {
+      case RuleNode(t, ns, _) => if (t.label == null || t.label.isEmpty()) {
+                                   if (ns.size == 1) return build(ns.head, b);
+                                   val x = skip(buildL(ns, b))
+                                   if (x.size() == 1) return x.get(0)
+                                   else throw new RuntimeException("This rule should have a label!")
+                                 } else {
                                    val x = buildL(ns, b)
                                    refArrayOps(b.getClass.getMethod(t.head.toLowerCase(), asScalaBuffer(new java.util.ArrayList[Class[_]]):_*)
-                                               .invoke(null).getClass.getMethods) foreach {m => // Public, static method!
-                                     if (m.getParameterCount == x.size())
-                                       return m.invoke(null, x:_*)
-                                     else {
-                                       val types = m.getParameterTypes;
-                                       if (types.length > x.size())
-                                         throw new RuntimeException("The matching method has not been found: " 
-                                                 + t.head + "." + t.label + x.foldLeft(""){ (a, el) => a + "," + el.getClass.getName })
-                                       val y = new java.util.ArrayList[Object]
-                                       var i, j = 0
-                                       var len = x.size
-                                       asScalaBuffer(x) foreach { elem =>
-                                         val typ = types.apply(j)
-                                         if (typ == elem.getClass) {
-                                           y.add(elem)
-                                           j = j + 1
-                                         } else if (elem.isInstanceOf[java.lang.String]) {
-                                           len = len - 1;
-                                           if (len < types.length) // Skiping a terminal results in a wrong number of arguments (not enough)
-                                             throw new RuntimeException("The matching method has not been found: " 
-                                                 + t.head + "." + t.label + x.foldLeft(""){ (a, el) => a + "," + el.getClass.getName })
-                                         } else 
-                                           throw new RuntimeException("The matching method has not been found: " 
-                                                 + t.head + "." + t.label + x.foldLeft(""){ (a, el) => a + "," + el.getClass.getName })
-                                         i = i + 1
+                                               .invoke(null).getClass.getMethods) foreach { m => // Public, static method!
+                                     if (m.getName.equals(t.label.toLowerCase)) {
+                                       if (m.getParameterCount == x.size())
+                                         try {
+                                           return m.invoke(null, x: _*)
+                                         } catch {
+                                           case e: IllegalArgumentException =>
+                                             throw new RuntimeException("The matching method has not been found: "
+                                                         + t.head + "." + t.label.toLowerCase + x.foldLeft("") { (a, el) => a + "," + el.getClass.getName })
+                                         }
+                                       else {
+                                         val types = m.getParameterTypes;
+                                         if (types.length > x.size())
+                                           throw new RuntimeException("The matching method has not been found: "
+                                                       + t.head + "." + t.label.toLowerCase + x.foldLeft("") { (a, el) => a + "," + el.getClass.getName })
+                                         val y = new java.util.ArrayList[Object]
+                                         var i, j = 0
+                                         var len = x.size
+                                         asScalaBuffer(x) foreach { elem =>
+                                           if (j > types.length - 1)
+                                             throw new RuntimeException("The matching method has not been found: "
+                                                     + t.head + "." + t.label.toLowerCase + x.foldLeft("") { (a, el) => a + "," + el.getClass.getName })
+                                           val typ = types.apply(j)
+                                           if (elem.isInstanceOf[java.lang.String] && typ != elem.getClass) {
+                                             len = len - 1;
+                                             if (len < types.length)
+                                               throw new RuntimeException("The matching method has not been found: "
+                                                           + t.head + "." + t.label.toLowerCase + x.foldLeft("") { (a, el) => a + "," + el.getClass.getName })
+                                           } else {
+                                             y.add(elem)
+                                             j = j + 1
+                                           }
+                                           i = i + 1
+                                         }
+                                         if (y.size != types.length)
+                                           throw new RuntimeException("The matching method has not been found: "
+                                                       + t.head + "." + t.label.toLowerCase + x.foldLeft("") { (a, el) => a + "," + el.getClass.getName })
+                                         try {
+                                           return m.invoke(null, y: _*)
+                                         } catch {
+                                           case e: IllegalArgumentException =>
+                                             throw new RuntimeException("The matching method has not been found: "
+                                                     + t.head + "." + t.label.toLowerCase + x.foldLeft("") { (a, el) => a + "," + el.getClass.getName })
+                                         }
                                        }
-                                       return m.invoke(null, y:_*)
                                      }
                                    }
                                    throw new RuntimeException("The matching method has not been found: " 
-                                                 + t.head + "." + t.label + x.foldLeft(""){ (a, el) => a + "," + el.getClass.getName })
+                                                 + t.head + "." + t.label.toLowerCase + x.foldLeft(""){ (a, el) => a + "," + el.getClass.getName })
                                  }
       case Star(ns)  => skip(buildL(ns, b, flatten = true))
       case Plus(ns)  => skip(buildL(ns, b, flatten = true))
