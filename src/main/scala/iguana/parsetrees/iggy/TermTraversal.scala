@@ -44,6 +44,8 @@ object TermTraversal {
                                    val x = skip(buildL(ns, b))
                                    if (x.size() == 1) return x.get(0)
                                    else throw new RuntimeException("This rule should have a label!")
+                                 } else if (t.label.toLowerCase.equals("start")) {
+                                   return build(ns.tail.head, b)
                                  } else {
                                    val x = buildL(ns, b)
                                    refArrayOps(b.getClass.getMethod(t.head.toLowerCase(), asScalaBuffer(new java.util.ArrayList[Class[_]]):_*)
@@ -94,7 +96,7 @@ object TermTraversal {
                                        }
                                      }
                                    }
-                                   throw new RuntimeException("The matching method has not been found: " 
+                                   throw new RuntimeException("The matching method has not been found: "
                                                  + t.head + "." + t.label.toLowerCase + x.foldLeft(""){ (a, el) => a + "," + el.getClass.getName })
                                  }
       case Star(ns)  => skip(buildL(ns, b, flatten = true))
