@@ -28,7 +28,7 @@ package iguana.parsetrees.iggy
 
 import iguana.parsetrees.tree._
 import scala.collection.JavaConversions._
-import java.lang.reflect.Method
+import java.lang.reflect.{InvocationTargetException, Method}
 
 /**
  * @author Anastasia Izmaylova
@@ -43,7 +43,8 @@ object TermTraversal {
                                    if (ns.size == 1) return build(ns.head, b);
                                    val x = skip(buildL(ns, b))
                                    if (x.size() == 1) return x.get(0)
-                                   else throw new RuntimeException("This rule should have a label!")
+                                   else
+                                     throw new RuntimeException("This rule should have a label: " + t)
                                  } else if (t.label.toLowerCase.equals("start")) {
                                    return build(ns.tail.head, b)
                                  } else {
@@ -58,6 +59,7 @@ object TermTraversal {
                                            case e: IllegalArgumentException =>
                                              throw new RuntimeException("The matching method has not been found: "
                                                          + t.head + "." + t.label.toLowerCase + x.foldLeft("") { (a, el) => a + "," + el.getClass.getName })
+                                           case e: InvocationTargetException => throw e.getTargetException
                                          }
                                        else {
                                          val types = m.getParameterTypes;
@@ -68,11 +70,11 @@ object TermTraversal {
                                          var i, j = 0
                                          var len = x.size
                                          asScalaBuffer(x) foreach { elem =>
-                                           if (j > types.length - 1)
+                                           if (j > types.length)
                                              throw new RuntimeException("The matching method has not been found: "
-                                                     + t.head + "." + t.label.toLowerCase + x.foldLeft("") { (a, el) => a + "," + el.getClass.getName })
-                                           val typ = types.apply(j)
-                                           if (elem.isInstanceOf[java.lang.String] && typ != elem.getClass) {
+                                               + t.head + "." + t.label.toLowerCase + x.foldLeft("") { (a, el) => a + "," + el.getClass.getName })
+                                           if (elem.isInstanceOf[java.lang.String]
+                                                   && (j == types.length || types.apply(j) != elem.getClass)) {
                                              len = len - 1;
                                              if (len < types.length)
                                                throw new RuntimeException("The matching method has not been found: "
@@ -92,6 +94,7 @@ object TermTraversal {
                                            case e: IllegalArgumentException =>
                                              throw new RuntimeException("The matching method has not been found: "
                                                      + t.head + "." + t.label.toLowerCase + x.foldLeft("") { (a, el) => a + "," + el.getClass.getName })
+                                           case e: InvocationTargetException => throw e.getTargetException
                                          }
                                        }
                                      }
