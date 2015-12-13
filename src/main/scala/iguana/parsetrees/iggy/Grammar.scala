@@ -91,7 +91,7 @@ object Grammar {
   
   def build(term: Tree, b: Builder): Object = {
     term match {
-      case RuleNode(t, children: Seq[Tree], _) =>       
+      case RuleNode(t, children: Seq[Tree], input) =>
         t.head.toLowerCase() match {
           case "definition" => return b.grammar(build(children.head, b).asInstanceOf[java.util.List[Object]])
           case "tag"        => return build(children.head, b)
@@ -223,7 +223,7 @@ object Grammar {
                               return l
       case Group(children) => return buildL(children, b)
       
-      case Terminal(_, i, j, input) => return input.subString(i, j)
+      case Terminal(name, i, j, input) => return input.subString(i, j)
       case Epsilon(_) => return None
         
       case _ => 

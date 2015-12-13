@@ -2,23 +2,21 @@
 package iguana.parsetrees.tree
 
 import iguana.parsetrees.visitor._
-import iguana.utils.input.Input
 
 import scala.collection.mutable.StringBuilder
-import scala.collection.immutable.Set
 
 
 object TreeToJavaCode {
 
-  def get(node: Tree, input: Input): String = {
-    val treeToJavaCode = new ToJavaCode(input) with Memoization[Tree]
+  def get(node: Tree): String = {
+    val treeToJavaCode = new ToJavaCode with Memoization[Tree]
     treeToJavaCode.visit(node)
     treeToJavaCode.get
   }
 
 }
 
-class ToJavaCode(val input: Input) extends Visitor[Tree] with Id {
+class ToJavaCode extends Visitor[Tree] with Id {
 
   type T = Unit
 
@@ -28,20 +26,20 @@ class ToJavaCode(val input: Input) extends Visitor[Tree] with Id {
 
   override def visit(node: Tree): VisitResult[Unit] = node match {
 
-    case Terminal(name, i, j, input) =>
-      sb ++= s"""Tree t${getId(node)} = createTerminal($i, $j);\n"""
+    case Terminal(slot, i, j, input) =>
+      sb ++= s"""Tree t${getId(node)} = createTerminal($slot, $i, $j, input);\n"""
       None
 
     case RuleNode(r, children, input) =>
       children.foreach(visit(_))
       val label = "list(" + children.map(c => "t" + getId(c)).mkString(", ") + ")"
-      sb ++= s"""Tree t${getId(node)} = createRule($r, $label);\n"""
+      sb ++= s"""Tree t${getId(node)} = createRule($r, $label, input);\n"""
       None
 
-     case Amb(branches: Set[Branch[Tree]]) =>
+     case Amb(branches: Seq[Branch[Tree]]) =>
        branches.foreach(b => b.children.foreach(c => visit(c)))
        val label = branches.map(b => "createBranch(list(" + b.children.map(c => "t" + getId(c)).mkString(", ") + "))").mkString(", ")
-       sb ++= s"""Tree t${getId(node)} = createAmbiguity(set($label));\n"""
+       sb ++= s"""Tree t${getId(node)} = createAmbiguity(list($label));\n"""
        None
 
     case Epsilon(i) =>

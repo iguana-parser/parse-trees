@@ -1,5 +1,6 @@
 package iguana.parsetrees.tree
 
+import iguana.parsetrees.slot.TerminalNodeType.TerminalNodeType
 import iguana.utils.input.Input
 import iguana.parsetrees.slot.Action
 
@@ -13,17 +14,25 @@ trait Branch[T] {
   def rightExtent: Int
 }
 
+/**
+  * This naming is very confusing. Try to unify them with the grammar model when the grammar model is ready.
+  */
 trait RuleType {
   def head: String
   def label: String
   def body: java.util.List[String]
   def action: Action
   def position: Int
+  def layout: Boolean
+}
+
+trait TerminalType {
+  def name: String
+  def nodeType: TerminalNodeType
 }
 
 trait TreeBuilder[T] {
-  def terminalNode(l: Int, r: Int, input: Input): T
-  def terminalNode(name: String, l: Int, r: Int, input: Input): T
+  def terminalNode(terminalType: TerminalType, l: Int, r: Int, input: Input): T
   def nonterminalNode(ruleType: RuleType, children: Seq[T], l: Int, r: Int, input: Input): T
   def ambiguityNode(children: Iterable[Branch[T]], l:Int, r:Int): T
   def branch(r: RuleType, children: Seq[T]): Branch[T]
@@ -44,14 +53,12 @@ class DefaultTreeBuilder(input: Input) extends TreeBuilder[Tree] {
 
   type T = Tree
 
-  override def terminalNode(l: Int, r: Int, input: Input): Tree = Terminal(l, r, input)
-
-  override def terminalNode(name: String, l: Int, r: Int, input: Input): Tree = Terminal(name, l, r, input)
+  override def terminalNode(terminalType: TerminalType, l: Int, r: Int, input: Input): Tree = Terminal(terminalType, l, r, input)
 
   override def nonterminalNode(ruleType: RuleType, children: Seq[Tree], l: Int, r: Int, input: Input): Tree =
     RuleNode(ruleType, children, input)
 
-  override def ambiguityNode(children: Iterable[Branch[Tree]], l: Int, r: Int): Tree = Amb(children.toSet[Branch[Tree]])
+  override def ambiguityNode(children: Iterable[Branch[Tree]], l: Int, r: Int): Tree = Amb(children.toSeq)
 
   override def branch(r: RuleType, children: Seq[Tree]): Branch[Tree] = TreeBranch(r, children)
 

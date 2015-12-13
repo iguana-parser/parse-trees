@@ -36,16 +36,15 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
 
     case TerminalNode(slot, leftExtent, rightExtent, input) =>
       if (leftExtent == rightExtent) Some(EpsilonList(leftExtent))
-      else
-      if (slot.terminalName == null) Some(builder.terminalNode(leftExtent, rightExtent, input))
-      else Some(builder.terminalNode(slot.terminalName, leftExtent, rightExtent, input))
+      else Some(builder.terminalNode(slot.terminalType, leftExtent, rightExtent, input))
 
     case n@NonterminalNode(slot, child, input) =>
       if (n.isAmbiguous) {
         Some(builder.ambiguityNode(n.children.map(p => builder.branch(p.rule, makeList(visit(p.leftChild)))), n.leftExtent, n.rightExtent))
       } else {
         n.slot.nodeType match {
-          case NonterminalNodeType.Basic => Some(builder.nonterminalNode(child.rule, makeList(visit(child.leftChild)), n.leftExtent, n.rightExtent, input))
+          case NonterminalNodeType.Layout |
+               NonterminalNodeType.Basic => Some(builder.nonterminalNode(child.rule, makeList(visit(child.leftChild)), n.leftExtent, n.rightExtent, input))
           case NonterminalNodeType.Star  => Some(flattenStar(visit(child.leftChild)))
           case NonterminalNodeType.Plus  => Some(flattenPlus(visit(child.leftChild)))
           case NonterminalNodeType.Opt   => Some(builder.opt(makeList(visit(child.leftChild)).head))
