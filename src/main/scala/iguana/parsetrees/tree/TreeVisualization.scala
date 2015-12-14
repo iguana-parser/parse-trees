@@ -17,16 +17,13 @@ object TreeVisualization {
   def generateWithoutLayout(node: Tree, dir: String, fileName: String) {
     val treeToDot = new TreeToDot with Memoization[Tree] with Predicate[Tree] {
       override def predicate: Tree => Boolean = tree => tree match {
-        case r: RuleNode => {
-          !r.isLayout
-        }
-        case t: Terminal => {
-          !t.isLayout
-        }
+        case r: RuleNode => !r.isLayout
+        case t: Terminal => !t.isLayout
         case _           => true
       }
     }
-    generateGraph(treeToDot.visit(node).get.toString, dir, fileName)
+    treeToDot.visit(node)
+    generateGraph(treeToDot.get, dir, fileName)
   }
 
 }

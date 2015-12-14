@@ -35,7 +35,7 @@ class RuleNode(val r: RuleType, val ts: Seq[Tree], val input: Input) extends Tre
   override def equals(t: Tree): Boolean =  t match {
     case n: RuleNode => leftExtent == n.leftExtent &&
                         rightExtent == n.rightExtent &&
-                        r  == n.r &&
+                        r.head  == n.r.head &&
                         ts.zip(n.ts).forall { case (t1, t2) => t1 equals t2 }
     case _           => false
   }
