@@ -47,6 +47,9 @@ trait VisitResult[+A] {
   def map[B](f: A => B): VisitResult[B] =
     if (isDefined) Some(f(this.get)) else None
 
+  def flatMap[B](f: A => VisitResult[B]): VisitResult[B] =
+    if (isDefined) f(this.get) else None
+
   def toSeq: collection.Seq[A] =
     if (isDefined) Buffer(this.get) else Buffer()
 }

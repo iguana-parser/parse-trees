@@ -15,7 +15,7 @@ trait Branch[T] {
 }
 
 /**
-  * This naming is very confusing. Try to unify them with the grammar model when the grammar model is ready.
+  * TODO: This naming is very confusing. Try to unify them with the grammar model when the grammar model is ready.
   */
 trait RuleType {
   def head: String

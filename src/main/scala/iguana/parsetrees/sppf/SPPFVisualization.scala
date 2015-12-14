@@ -3,14 +3,16 @@ package iguana.parsetrees.sppf
 import iguana.parsetrees.slot.NonterminalNodeType
 import iguana.parsetrees.visitor._
 
-import scala.collection.mutable._
 import iguana.utils.visualization.GraphVizUtil._
+
+import scala.collection.mutable.Buffer
 
 object SPPFVisualization {
 
   def generate(node: SPPFNode, dir: String, fileName: String) {
     val sppfToDot = new SPPFToDot with SPPFMemoization
-    generateGraph(sppfToDot.visit(node).get.toString, dir, fileName)
+    sppfToDot.visit(node)
+    generateGraph(sppfToDot.get, dir, fileName)
   }
 
   def generateWithoutLayout(node: SPPFNode, dir: String, fileName: String) {
@@ -23,74 +25,52 @@ object SPPFVisualization {
       }
     }
 
-    generateGraph(sppfToDot.visit(node).get.toString, dir, fileName)
+    sppfToDot.visit(node)
+    generateGraph(sppfToDot.get, dir, fileName)
   }
 }
 
+
 class SPPFToDot extends Visitor[SPPFNode] with Id {
 
-  type T = StringBuilder
+  type T = Seq[Int]
+
+  def get = sb.toString
+
+  val sb = new StringBuilder
 
   def visit(node: SPPFNode): VisitResult[T] = node match {
 
-      case n:NonterminalNode =>
-        val children = n.children
-        val name = n.name
-        val slot = n.slot
+      case n@NonterminalNode(slot, child, input) =>
         val color = if (n.isAmbiguous) "red" else "black"
-
-        val sb = new StringBuilder
-        sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format(color, escape(name) + "," + n.leftExtent + "," + n.rightExtent) + "\n"
-
-        for (c <- children) {
-          visit(c) match {
-            case Some(s) => sb append s append addEdge(node, c)
-            case _       =>
-          }
-        }
-
-        Some(sb)
+        sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format(color, escape(slot) + "," + n.leftExtent + "," + n.rightExtent) + "\n"
+        visit(child).flatMap(id => addEdge(n, id))
 
       case n@IntermediateNode(name, leftExtent, rightExtent, children) =>
         val color = if (n.isAmbiguous) "red" else "black"
-        val sb = new StringBuilder
         sb ++= s"""${getId(node)}""" + RECTANGLE.format(color, escape(name) + "," + leftExtent + "," + rightExtent) + "\n"
+        addEdge(n, for (c <- children; x <- visit(c).toSeq; i <- x) yield i)
 
-        for (c <- children) {
-          visit(c) match {
-            case Some(s) => sb append s append addEdge(node, c)
-            case _       =>
-          }
-        }
-
-        Some(sb)
-
-      case TerminalNode(name, leftExtent, rightExtent, input) =>
+      case n@TerminalNode(name, leftExtent, rightExtent, input) =>
           if (leftExtent == rightExtent)
-            Some(new StringBuilder(s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "&epsilon;" + "," + leftExtent) + "\n"))
+            sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", "&epsilon;" + "," + leftExtent) + "\n"
           else
-            Some(new StringBuilder(s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", escape(name) + "," + leftExtent + "," + rightExtent + " (\\\"" + escape(input.subString(leftExtent, rightExtent)) +  "\\\")") + "\n"))
+            sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format("black", escape(name) + "," + leftExtent + "," + rightExtent + " (\\\"" + escape(input.subString(leftExtent, rightExtent)) +  "\\\")") + "\n"
+      Some(Buffer(getId(n)))
 
-      case PackedNode(name, pivot, leftChild, rightChild) =>
-        val sb = new scala.StringBuilder()
+      case n@PackedNode(name, pivot, leftChild, rightChild) =>
         sb ++= s"""${getId(node)}""" + CIRCLE.format("black", "","") + "\n"
-
-        visit(leftChild) match {
-          case Some(s) => sb append s append addEdge(node, leftChild)
-          case _       =>
-        }
-
-        if (rightChild != null) {
-
-          visit(rightChild) match {
-            case Some(s) => sb append s append addEdge(node, rightChild)
-            case _       =>
-          }
-        }
-        Some(sb)
+        val l = visit(leftChild).flatMap(id => addEdge(n, id)).toSeq.flatten
+        val r = (if (rightChild != null) visit(rightChild).flatMap(id => addEdge(n, id)) else None).toSeq.flatten
+        Some(l ++ r)
     }
 
-  def addEdge(src: SPPFNode, dst: SPPFNode) = s"""edge [color=black, style=solid, penwidth=0.5, arrowsize=0.7]; ${getId(src)} -> { ${getId(dst)} }\n"""
+  def addEdge(node: SPPFNode, childrenIds: Seq[Int]): VisitResult[Seq[Int]] = {
+    if (!childrenIds.isEmpty)
+      sb ++= s"edge [color=black, style=solid, penwidth=0.5, arrowsize=0.7]; ${getId(node)} -> { ${childrenIds.mkString(", ")} }\n"
+
+    Some(Buffer(getId(node)))
+  }
 
   def escape(s: Any) = s.toString.replaceAll("\"", "\\\\\"")
                                  .replaceAll("\n", "n")

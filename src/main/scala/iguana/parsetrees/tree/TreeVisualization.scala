@@ -10,7 +10,8 @@ object TreeVisualization {
 
   def generate(node: Tree, dir: String, fileName: String) {
     val treeToDot = new TreeToDot with Memoization[Tree]
-    generateGraph(treeToDot.visit(node).get.toString, dir, fileName)
+    treeToDot.visit(node)
+    generateGraph(treeToDot.get, dir, fileName)
   }
 
   def generateWithoutLayout(node: Tree, dir: String, fileName: String) {
@@ -32,86 +33,77 @@ object TreeVisualization {
 
 class TreeToDot extends Visitor[Tree] with Id {
 
-  type T = StringBuilder
+  type T = Seq[Int]
+
+  def get: String = sb.toString
+
+  val sb = new StringBuilder
 
   override def visit(node: Tree): VisitResult[T] = node match {
 
     case Terminal(name, i, j, input) =>
-      Some(new StringBuilder(s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", escape(input.subString(i, j)))}\n"))
+      val id = getId(node)
+      sb ++= s"$id ${ROUNDED_RECTANGLE.format("black", escape(input.subString(i, j)))}\n"
+      Some(Buffer(id))
 
     case RuleNode(r, children, input) =>
-      val sb = new scala.StringBuilder()
-      sb ++= s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", r)}\n"
-
-      for (c <- children) {
-        visit(c) match {
-          case Some(s) => sb append s append addEdge(node, c)
-          case _       =>
-        }
-      }
-      Some(sb)
+      sb ++= s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", r.head)}\n"
+      val ids = for (c <- children; x <- visit(c).toSeq; i <- x) yield i
+      addEdge(node, ids)
 
      case Amb(branches: Set[Branch[Tree]]) =>
-       val sb = new StringBuilder
        sb ++= s"${getId(node)} ${DIAMOND.format("red")}\n"
-       for (b <- branches) {
-         for (c <- b.children) {
-           sb ++= s"${getId(b)} ${CIRCLE.format("black", "", "")}\n"
-           addEdge(b, c)
-         }
-       }
-      Some(sb)
+       val ids: Seq[Int] = (for (b <- branches; x <- getBranch(b).toSeq; i <- x) yield i) (collection.breakOut)
+       addEdge(node, ids)
 
     case Epsilon(i) =>
-      Some(new StringBuilder(s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", "&epsilon;")}\n"))
+      val id = getId(node)
+      sb ++= s"$id ${ROUNDED_RECTANGLE.format("black", "&epsilon;")}\n"
+      Some(Buffer(id))
 
     case Cycle(label) =>
-      Some(new StringBuilder(s"${getId(node)} ${CIRCLE.format("red", label, "")}\n"))
+      val id = getId(node)
+      sb ++= s"$id ${CIRCLE.format("red", label, "")}\n"
+      Some(Buffer(id))
 
     case Star(children) =>
-      val sb = new StringBuilder
       sb ++= s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", "*")}\n"
-      addEdge(node, children, sb)
-      Some(sb)
-
+      val ids = for (c <- children; x <- visit(c).toSeq; i <- x) yield i
+      addEdge(node, ids)
 
     case Plus(children) =>
-      val sb = new StringBuilder
       sb ++= s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", "+")}\n"
-      addEdge(node, children, sb)
-      Some(sb)
+      val ids = for (c <- children; x <- visit(c).toSeq; i <- x) yield i
+      addEdge(node, ids)
 
     case Group(children) =>
-      val sb = new StringBuilder
       sb ++= s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", "()")}\n"
-      addEdge(node, children, sb)
-      Some(sb)
+      val ids = for (c <- children; x <- visit(c).toSeq; i <- x) yield i
+      addEdge(node, ids)
 
     case Opt(child) =>
-      val sb = new StringBuilder
       sb ++= s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", "?")}\n"
-      addEdge(node, Buffer(child), sb)
-      Some(sb)
+      val ids = for (v <- visit(child).toSeq; i <- v) yield i
+      addEdge(node, ids)
 
     case Alt(children) =>
-      val sb = new StringBuilder
       sb ++= s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", "|")}\n"
-      addEdge(node, children, sb)
-      Some(sb)
+      val ids = for (c <- children; x <- visit(c).toSeq; i <- x) yield i
+      addEdge(node, ids)
+
   }
 
-
-  def addEdge(node: Tree, children: Seq[Tree], sb: StringBuilder): Unit = {
-    for (c <- children) {
-      visit(c) match {
-        case Some(s) => sb append s append addEdge(node, c)
-        case _       =>
-      }
-    }
-    Some(sb)
+  def getBranch(b: Branch[Tree]): VisitResult[Seq[Int]] = {
+    sb ++= s"${getId(b)} ${CIRCLE.format("black", "", "")}\n"
+    val ids = for (c <- b.children; x <- visit(c).toSeq; i <- x) yield i
+    addEdge(b, ids)
   }
 
-  def addEdge(src: Any, dst: Any) = s"""edge [color=black, style=solid, penwidth=0.5, arrowsize=0.7]; ${getId(src)} -> { ${getId(dst)} }\n"""
+  def addEdge(node: Any, dstIds: Seq[Int]): VisitResult[Seq[Int]] = {
+    if (! dstIds.isEmpty)
+      sb ++= s"edge [color=black, style=solid, penwidth=0.5, arrowsize=0.7]; ${getId(node)} -> { ${dstIds.mkString(", ")} }\n"
+    Some(Buffer(getId(node)))
+  }
 
   def escape(s: Any) = s.toString.replaceAll("\"", "\\\\\"")
                                  .replaceAll("\n", "n")
