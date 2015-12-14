@@ -51,7 +51,7 @@ class TreeToDot extends Visitor[Tree] with Id {
       val ids = for (c <- children; x <- visit(c).toSeq; i <- x) yield i
       addEdge(node, ids)
 
-     case Amb(branches: Set[Branch[Tree]]) =>
+     case Amb(branches) =>
        sb ++= s"${getId(node)} ${DIAMOND.format("red")}\n"
        val ids: Seq[Int] = (for (b <- branches; x <- getBranch(b).toSeq; i <- x) yield i) (collection.breakOut)
        addEdge(node, ids)
