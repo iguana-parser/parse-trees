@@ -27,7 +27,7 @@ class ToJavaCode extends Visitor[SPPFNode] with Id {
       val name = n.name
       val slot = n.slot
       children.foreach(p => p.children.foreach(visit(_)))
-      sb ++= s"""NonterminalNode node${getId(node)} = createNonterminalNode(registry.getSlot("$name"), registry.getSlot("${children.head.slot.toString}"), node${getId(children.head.leftChild)});\n"""
+      sb ++= s"""NonterminalNode node${getId(node)} = createNonterminalNode(registry.getSlot("$name"), registry.getSlot("${children.head.slot.toString}"), node${getId(children.head.leftChild)}, input);\n"""
       children.tail.foreach(c => sb ++= s"""node${getId(node)}.addPackedNode(registry.getSlot("${c.slot.toString}"), node${getId(c.leftChild)});\n""")
       None
 
@@ -38,7 +38,7 @@ class ToJavaCode extends Visitor[SPPFNode] with Id {
       None
 
     case TerminalNode(name, leftExtent, rightExtent, input) =>
-      sb ++= s"""TerminalNode node${getId(node)} = createTerminalNode(registry.getSlot("$name"), $leftExtent, $rightExtent);\n"""
+      sb ++= s"""TerminalNode node${getId(node)} = createTerminalNode(registry.getSlot("$name"), $leftExtent, $rightExtent, input);\n"""
       None
   }
 }
