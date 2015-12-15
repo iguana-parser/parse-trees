@@ -5,16 +5,6 @@ import iguana.utils.input.Input
 import iguana.parsetrees.slot.Action
 
 /**
- * Represents an ambiguity branch
- */
-trait Branch[T] {
-  def ruleType: RuleType
-  def children: Seq[T]
-  def leftExtent: Int
-  def rightExtent: Int
-}
-
-/**
   * TODO: This naming is very confusing. Try to unify them with the grammar model when the grammar model is ready.
   */
 trait RuleType {
@@ -34,8 +24,7 @@ trait TerminalType {
 trait TreeBuilder[T] {
   def terminalNode(terminalType: TerminalType, l: Int, r: Int, input: Input): T
   def nonterminalNode(ruleType: RuleType, children: Seq[T], l: Int, r: Int, input: Input): T
-  def ambiguityNode(children: Iterable[Branch[T]], l:Int, r:Int): T
-  def branch(r: RuleType, children: Seq[T]): Branch[T]
+  def ambiguityNode(children: Seq[Seq[T]]): T
   def star(children: Seq[T]): T
   def plus(children: Seq[T]): T
   def alt(l: Seq[T]): T
@@ -58,9 +47,7 @@ class DefaultTreeBuilder(input: Input) extends TreeBuilder[Tree] {
   override def nonterminalNode(ruleType: RuleType, children: Seq[Tree], l: Int, r: Int, input: Input): Tree =
     RuleNode(ruleType, children, input)
 
-  override def ambiguityNode(children: Iterable[Branch[Tree]], l: Int, r: Int): Tree = Amb(children.toSeq)
-
-  override def branch(r: RuleType, children: Seq[Tree]): Branch[Tree] = TreeBranch(r, children)
+  override def ambiguityNode(children: Seq[Seq[Tree]]): Tree = Amb(children)
 
   override def cycle(label: String) = Cycle(label)
 

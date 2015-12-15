@@ -36,9 +36,9 @@ class ToJavaCode extends Visitor[Tree] with Id {
       sb ++= s"""Tree t${getId(node)} = createRule($r, $label, input);\n"""
       None
 
-     case Amb(branches: Seq[Branch[Tree]]) =>
-       branches.foreach(b => b.children.foreach(c => visit(c)))
-       val label = branches.map(b => "createBranch(list(" + b.children.map(c => "t" + getId(c)).mkString(", ") + "))").mkString(", ")
+     case Amb(branches: Seq[Seq[Tree]]) =>
+       branches.foreach(b => b.foreach(c => visit(c)))
+       val label = branches.map(b => "list(" + b.map(c => "t" + getId(c)).mkString(", ") + ")").mkString(", ")
        sb ++= s"""Tree t${getId(node)} = createAmbiguity(list($label));\n"""
        None
 

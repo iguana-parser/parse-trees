@@ -90,9 +90,9 @@ class TreeToDot extends Visitor[Tree] with Id {
 
   }
 
-  def getBranch(b: Branch[Tree]): VisitResult[Seq[Int]] = {
+  def getBranch(b: Seq[Tree]): VisitResult[Seq[Int]] = {
     sb ++= s"${getId(b)} ${CIRCLE.format("black", "", "")}\n"
-    val ids = for (c <- b.children; x <- visit(c).toSeq; i <- x) yield i
+    val ids = for (c <- b; x <- visit(c).toSeq; i <- x) yield i
     addEdge(b, ids)
   }
 

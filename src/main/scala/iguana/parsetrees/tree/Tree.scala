@@ -3,7 +3,7 @@ package iguana.parsetrees.tree
 import iguana.parsetrees.slot.TerminalNodeType
 import iguana.utils.input.Input
 
-import scala.collection.convert.wrapAsScala._
+import scala.collection.JavaConverters._
 
 trait Tree {
   def leftExtent: Int
@@ -13,18 +13,19 @@ trait Tree {
 }
 
 object TreeFactory {
-  def createRule(ruleType: RuleType, children: java.util.List[Tree], input: Input) = RuleNode(ruleType, children, input)
-  def createAmbiguity(children: java.util.List[Branch[Tree]]) = Amb(children.toSeq)
-  def createBranch(r: RuleType, children: java.util.List[Tree]) = TreeBranch(r, children.toSeq)
-  def createBranch(children: java.util.List[Tree]) = TreeBranch(null, children)
+  def createRule(ruleType: RuleType, children: java.util.List[Tree], input: Input) = RuleNode(ruleType, children.asScala, input)
+  def createAmbiguity(children: java.util.List[java.util.List[Tree]]) = Amb(asScala(children))
   def createTerminal(terminalType: TerminalType, leftExtent: Int, rightExtent:Int, input: Input) = Terminal(terminalType, leftExtent, rightExtent, input)
   def createEpsilon(i: Int) = Epsilon(i)
   def createCycle(label: String) = Cycle(label)
-  def createStar(children: java.util.List[Tree]) = Star(children)
-  def createPlus(children: java.util.List[Tree]) = Plus(children)
-  def createGroup(children: java.util.List[Tree]) = Group(children)
-  def createAlt(children: java.util.List[Tree]) = Alt(children)
+  def createStar(children: java.util.List[Tree]) = Star(children.asScala)
+  def createPlus(children: java.util.List[Tree]) = Plus(children.asScala)
+  def createGroup(children: java.util.List[Tree]) = Group(children.asScala)
+  def createAlt(children: java.util.List[Tree]) = Alt(children.asScala)
   def createOpt(child: Tree) = Opt(child)
+
+
+  def asScala[T](list: java.util.List[java.util.List[T]]): Seq[Seq[T]] = list.asScala.map(x => x.asScala)
 }
 
 class RuleNode(val r: RuleType, val ts: Seq[Tree], val input: Input) extends Tree {
@@ -46,36 +47,22 @@ object RuleNode {
   def unapply(r: RuleNode): Option[(RuleType, Seq[Tree], Input)] = Some(r.r, r.ts, r.input)
 }
 
-class TreeBranch(val ruleType: RuleType, val children: Seq[Tree]) extends Branch[Tree] {
-  override def leftExtent = children.head.leftExtent
-  override def rightExtent = children.last.rightExtent
 
-  override def equals(o: Any) = o match {
-    case b:TreeBranch => b.children.zip(children).forall { case (c1, c2) => c1 equals c2 }
-    case _            => false
-  }
-}
-
-object TreeBranch {
-  def apply(ruleType: RuleType, children: Seq[Tree]) = new TreeBranch(ruleType, children)
-  def unapply(t: TreeBranch): Option[(RuleType, Seq[Tree])] = Some(t.ruleType, t.children)
-}
-
-class Amb(val ts: Seq[Branch[Tree]]) extends Tree {
-  override def leftExtent: Int = ts.head.leftExtent
-  override def rightExtent: Int = ts.head.rightExtent
+class Amb(val ts: Seq[Seq[Tree]]) extends Tree {
+  override def leftExtent: Int = ts.head.head.leftExtent
+  override def rightExtent: Int = ts.head.last.rightExtent
 
   override def equals(t: Tree): Boolean = t match {
     case a: Amb => leftExtent == a.leftExtent &&
                    rightExtent == a.rightExtent &&
-                   ts.zip(a.ts).forall { case (t1, t2) => t1 equals t2 }
+                   ts.zip(a.ts).forall { case (t1, t2) => t1.zip(t2).forall { case (z1, z2) => z1 equals z2 } }
     case _      => false
   }
 }
 
 object Amb {
-  def apply(ts: Seq[Branch[Tree]]) = new Amb(ts)
-  def unapply(a: Amb): Option[Seq[Branch[Tree]]] = Some(a.ts)
+  def apply(ts: Seq[Seq[Tree]]) = new Amb(ts)
+  def unapply(a: Amb): Option[Seq[Seq[Tree]]] = Some(a.ts)
 }
 
 class Terminal(val tt: TerminalType, val leftExtent: Int, val rightExtent: Int, val input: Input) extends Tree {
