@@ -12,7 +12,7 @@ object SPPFToJavaCode {
 
 }
 
-class ToJavaCode extends Visitor[SPPFNode] with Id {
+private class ToJavaCode extends Visitor[SPPFNode] with Id {
 
   override type T = Unit
 

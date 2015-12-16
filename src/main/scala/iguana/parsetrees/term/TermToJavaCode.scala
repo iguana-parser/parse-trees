@@ -1,22 +1,22 @@
 
-package iguana.parsetrees.tree
+package iguana.parsetrees.term
 
 import iguana.parsetrees.visitor._
 
 import scala.collection.mutable.StringBuilder
 
 
-object TreeToJavaCode {
+object TermToJavaCode {
 
-  def get(node: Tree): String = {
-    val treeToJavaCode = new ToJavaCode with Memoization[Tree]
+  def get(node: Term): String = {
+    val treeToJavaCode = new ToJavaCode with Memoization[Term]
     treeToJavaCode.visit(node)
     treeToJavaCode.get
   }
 
 }
 
-class ToJavaCode extends Visitor[Tree] with Id {
+private class ToJavaCode extends Visitor[Term] with Id {
 
   type T = Unit
 
@@ -24,19 +24,19 @@ class ToJavaCode extends Visitor[Tree] with Id {
 
   val sb = new StringBuilder
 
-  override def visit(node: Tree): VisitResult[Unit] = node match {
+  override def visit(node: Term): VisitResult[Unit] = node match {
 
-    case Terminal(slot, i, j, input) =>
+    case TerminalTerm(slot, i, j, input) =>
       sb ++= s"""Tree t${getId(node)} = createTerminal($slot, $i, $j, input);\n"""
       None
 
-    case RuleNode(r, children, input) =>
+    case NonterminalTerm(r, children, input) =>
       children.foreach(visit(_))
       val label = "list(" + children.map(c => "t" + getId(c)).mkString(", ") + ")"
       sb ++= s"""Tree t${getId(node)} = createRule($r, $label, input);\n"""
       None
 
-     case Amb(branches: Seq[Seq[Tree]]) =>
+     case AmbiguityTerm(branches: Seq[Seq[Term]]) =>
        branches.foreach(b => b.foreach(c => visit(c)))
        val label = branches.map(b => "list(" + b.map(c => "t" + getId(c)).mkString(", ") + ")").mkString(", ")
        sb ++= s"""Tree t${getId(node)} = createAmbiguity(list($label));\n"""

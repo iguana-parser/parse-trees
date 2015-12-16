@@ -1,4 +1,4 @@
-package iguana.parsetrees.tree
+package iguana.parsetrees.term
 
 import iguana.parsetrees.slot.NonterminalNodeType
 import iguana.parsetrees.sppf._
@@ -6,25 +6,24 @@ import iguana.parsetrees.visitor._
 
 import scala.collection.mutable.Buffer
 
-object TermBuilder {
+object SPPFToTerms {
 
-  def build[T >: Any](node: SPPFNode, builder: TreeBuilder[T]): T
-    = build(node, builder, new TermBuilderSPPFVisitor(builder) with SPPFMemoization);
+  def convert[T >: Any](node: SPPFNode, builder: TermBuilder[T]): T
+    = convert(node, builder, new TermBuilderSPPFVisitor(builder) with SPPFMemoization);
 
-  def build_no_memo[T >: Any](node: SPPFNode, builder: TreeBuilder[T]): T
-    = build(node, builder, new TermBuilderSPPFVisitor(builder));
+  def convertNoSharing[T >: Any](node: SPPFNode, builder: TermBuilder[T]): T
+    = convert(node, builder, new TermBuilderSPPFVisitor(builder));
 
-  private def build[T >: Any](node: SPPFNode, builder: TreeBuilder[T], visitor: TermBuilderSPPFVisitor): T =  {
+  private def convert[T >: Any](node: SPPFNode, builder: TermBuilder[T], visitor: TermBuilderSPPFVisitor): T =  {
     visitor.visit(node) match {
       case Some(v) => v.asInstanceOf[T]
       case None    => throw new RuntimeException()
     }
   }
-
 }
 
 
-class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode] {
+class TermBuilderSPPFVisitor(builder: TermBuilder[Any]) extends Visitor[SPPFNode] {
 
   override type T = Any
 
@@ -36,15 +35,15 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
 
     case TerminalNode(slot, leftExtent, rightExtent, input) =>
       if (leftExtent == rightExtent) Some(EpsilonList(leftExtent))
-      else Some(builder.terminalNode(slot.terminalType, leftExtent, rightExtent, input))
+      else Some(builder.terminalTerm(slot.terminalType, leftExtent, rightExtent, input))
 
     case n@NonterminalNode(slot, child, input) =>
       if (n.isAmbiguous) {
-        Some(builder.ambiguityNode(n.children.map(p => makeList(visit(p.leftChild)))))
+        Some(builder.ambiguityTerm(n.children.map(p => makeList(visit(p.leftChild)))))
       } else {
         n.slot.nodeType match {
           case NonterminalNodeType.Layout |
-               NonterminalNodeType.Basic => Some(builder.nonterminalNode(child.rule, makeList(visit(child.leftChild)), n.leftExtent, n.rightExtent, input))
+               NonterminalNodeType.Basic => Some(builder.nonterminalTerm(child.rule, makeList(visit(child.leftChild)), n.leftExtent, n.rightExtent, input))
           case NonterminalNodeType.Star  => Some(flattenStar(visit(child.leftChild)))
           case NonterminalNodeType.Plus  => Some(flattenPlus(visit(child.leftChild)))
           case NonterminalNodeType.Opt   => Some(builder.opt(makeList(visit(child.leftChild)).head))
@@ -55,7 +54,7 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
 
     case IntermediateNode(slot, leftExtent, rightExtent, children) =>
       if (children.size > 1) // Ambiguous node
-        Some(builder.ambiguityNode(children.map(p => merge(p).get)))
+        Some(builder.ambiguityTerm(children.map(p => merge(p).get)))
       else
         merge(children.head)
 
@@ -78,7 +77,7 @@ class TermBuilderSPPFVisitor(builder: TreeBuilder[Any]) extends Visitor[SPPFNode
     // A* ::= A+
     case Some(PlusList(l))    => builder.star(l)
     // For cases where A* is ambiguous
-    case Some(a: Amb)         => a
+    case Some(a: AmbiguityTerm)         => a
   }
 
   def flattenPlus(child: Any): Any = child match {

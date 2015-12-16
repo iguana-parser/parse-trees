@@ -28,7 +28,7 @@ package iguana.parsetrees.iggy
 
 import java.util
 
-import iguana.parsetrees.tree._
+import iguana.parsetrees.term._
 import scala.collection.JavaConversions._
 
 /**
@@ -89,9 +89,9 @@ trait Builder {
 
 object Grammar {
   
-  def build(term: Tree, b: Builder): Object = {
+  def build(term: Term, b: Builder): Object = {
     term match {
-      case RuleNode(t, children: Seq[Tree], input) =>
+      case NonterminalTerm(t, children: Seq[Term], input) =>
         t.head.toLowerCase() match {
           case "definition" => return b.grammar(build(children.head, b).asInstanceOf[java.util.List[Object]])
           case "tag"        => return build(children.head, b)
@@ -223,7 +223,7 @@ object Grammar {
                               return l
       case Group(children) => return buildL(children, b)
       
-      case Terminal(name, i, j, input) => return input.subString(i, j)
+      case TerminalTerm(name, i, j, input) => return input.subString(i, j)
       case Epsilon(_) => return None
         
       case _ => 
@@ -232,7 +232,7 @@ object Grammar {
     
   }
   
-  def buildL(children: Seq[Tree], b: Builder, flatten: Boolean = true): java.util.List[Object] = {
+  def buildL(children: Seq[Term], b: Builder, flatten: Boolean = true): java.util.List[Object] = {
     val l = new java.util.ArrayList[Object]
     var i = 0
     children.foreach { child => // Skip layout 

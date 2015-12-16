@@ -28,7 +28,7 @@
 package iguana.parsetrees.sppf
 
 import iguana.parsetrees.slot._
-import iguana.parsetrees.tree.RuleType
+import iguana.parsetrees.term.RuleType
 import iguana.utils.input.Input
 
 import scala.collection.mutable.{ListBuffer, Set}

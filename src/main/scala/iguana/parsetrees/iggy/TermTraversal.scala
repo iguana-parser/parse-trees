@@ -26,7 +26,7 @@
  */
 package iguana.parsetrees.iggy
 
-import iguana.parsetrees.tree._
+import iguana.parsetrees.term._
 import scala.collection.JavaConversions._
 import java.lang.reflect.{InvocationTargetException, Method}
 
@@ -37,9 +37,9 @@ object TermTraversal {
   
   trait Actions
   
-  def build(term: Tree, b: Actions): Object = {
+  def build(term: Term, b: Actions): Object = {
     term match {
-      case RuleNode(t, ns, _) => if (t.label == null || t.label.isEmpty()) {
+      case NonterminalTerm(t, ns, _) => if (t.label == null || t.label.isEmpty()) {
                                    if (ns.size == 1) return build(ns.head, b);
                                    val x = skip(buildL(ns, b))
                                    if (x.size() == 1) return x.get(0)
@@ -116,7 +116,7 @@ object TermTraversal {
                         }
       case Group(ns) => skip(buildL(ns, b, flatten = true))
         
-      case Terminal(_, i, j, input) => return input.subString(i, j)
+      case TerminalTerm(_, i, j, input) => return input.subString(i, j)
       case Epsilon(_) => None
       
       case _ => throw new RuntimeException("Unexpected type of a term: " + term)
@@ -124,7 +124,7 @@ object TermTraversal {
     
   }
   
-  def buildL(children: Seq[Tree], b: Actions, flatten: Boolean = false): java.util.List[Object] = {
+  def buildL(children: Seq[Term], b: Actions, flatten: Boolean = false): java.util.List[Object] = {
     val l = new java.util.ArrayList[Object];
     var i = 0
     children foreach { child =>

@@ -1,24 +1,24 @@
 
-package iguana.parsetrees.tree
+package iguana.parsetrees.term
 
 import iguana.parsetrees.visitor._
 import iguana.utils.visualization.GraphVizUtil._
 
 import scala.collection.mutable.{Buffer, StringBuilder}
 
-object TreeVisualization {
+object TermVisualization {
 
-  def generate(node: Tree, dir: String, fileName: String) {
-    val treeToDot = new TreeToDot with Memoization[Tree]
+  def generate(node: Term, dir: String, fileName: String) {
+    val treeToDot = new TermToDot with Memoization[Term]
     treeToDot.visit(node)
     generateGraph(treeToDot.get, dir, fileName)
   }
 
-  def generateWithoutLayout(node: Tree, dir: String, fileName: String) {
-    val treeToDot = new TreeToDot with Memoization[Tree] with Predicate[Tree] {
-      override def predicate: Tree => Boolean = tree => tree match {
-        case r: RuleNode => !r.isLayout
-        case t: Terminal => !t.isLayout
+  def generateWithoutLayout(node: Term, dir: String, fileName: String) {
+    val treeToDot = new TermToDot with Memoization[Term] with Predicate[Term] {
+      override def predicate: Term => Boolean = tree => tree match {
+        case r: NonterminalTerm => !r.isLayout
+        case t: TerminalTerm => !t.isLayout
         case _           => true
       }
     }
@@ -28,7 +28,7 @@ object TreeVisualization {
 
 }
 
-class TreeToDot extends Visitor[Tree] with Id {
+class TermToDot extends Visitor[Term] with Id {
 
   type T = Seq[Int]
 
@@ -36,19 +36,19 @@ class TreeToDot extends Visitor[Tree] with Id {
 
   val sb = new StringBuilder
 
-  override def visit(node: Tree): VisitResult[T] = node match {
+  override def visit(node: Term): VisitResult[T] = node match {
 
-    case Terminal(name, i, j, input) =>
+    case TerminalTerm(name, i, j, input) =>
       val id = getId(node)
       sb ++= s"$id ${ROUNDED_RECTANGLE.format("black", escape(input.subString(i, j)))}\n"
       Some(Buffer(id))
 
-    case RuleNode(r, children, input) =>
+    case NonterminalTerm(r, children, input) =>
       sb ++= s"${getId(node)} ${ROUNDED_RECTANGLE.format("black", r.head)}\n"
       val ids = for (c <- children; x <- visit(c).toSeq; i <- x) yield i
       addEdge(node, ids)
 
-     case Amb(branches) =>
+     case AmbiguityTerm(branches) =>
        sb ++= s"${getId(node)} ${DIAMOND.format("red")}\n"
        val ids: Seq[Int] = (for (b <- branches; x <- getBranch(b).toSeq; i <- x) yield i) (collection.breakOut)
        addEdge(node, ids)
@@ -90,7 +90,7 @@ class TreeToDot extends Visitor[Tree] with Id {
 
   }
 
-  def getBranch(b: Seq[Tree]): VisitResult[Seq[Int]] = {
+  def getBranch(b: Seq[Term]): VisitResult[Seq[Int]] = {
     sb ++= s"${getId(b)} ${CIRCLE.format("black", "", "")}\n"
     val ids = for (c <- b; x <- visit(c).toSeq; i <- x) yield i
     addEdge(b, ids)

@@ -24,8 +24,8 @@ object TerminalNodeType {
 
 import NonterminalNodeType._
 import TerminalNodeType._
-import iguana.parsetrees.tree.RuleType
-import iguana.parsetrees.tree.TerminalType
+import iguana.parsetrees.term.RuleType
+import iguana.parsetrees.term.TerminalType
 
 trait Slot
 
