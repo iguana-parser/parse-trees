@@ -46,6 +46,18 @@ object NonterminalTerm {
   def unapply(r: NonterminalTerm): Option[(RuleType, Seq[Term], Input)] = Some(r.r, r.ts, r.input)
 }
 
+object NT {
+  def unapply(nt: NonterminalTerm): Option[(String, Seq[Term])] =
+    Some(nt.r.head, nt.ts.filter {
+                                case n: NonterminalTerm => !n.isLayout
+                                case t: TerminalTerm    => !t.isLayout
+                               })
+}
+
+object NTL {
+  def unapply(nt: NonterminalTerm): Option[(String, Seq[Term])] = Some(nt.r.head, nt.ts)
+}
+
 
 class AmbiguityTerm(val ts: Seq[Seq[Term]]) extends Term {
   override def leftExtent: Int = ts.head.head.leftExtent
@@ -81,7 +93,10 @@ object TerminalTerm {
     new TerminalTerm(tt, leftExtent, rightExtent, input)
 
   def unapply(t: TerminalTerm): Option[(TerminalType, Int, Int, Input)] = Some(t.tt, t.leftExtent, t.rightExtent, t.input)
+}
 
+object TT {
+  def unapply(tt: TerminalTerm): Option[String] = Some(tt.tt.name)
 }
 
 class Epsilon(val i: Int) extends Term {
