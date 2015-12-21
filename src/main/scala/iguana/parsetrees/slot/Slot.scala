@@ -47,4 +47,6 @@ trait Action {
   def apply(a: Any): Any
 }
 
-case object DummySlot extends Slot
+case object DummySlot extends Slot {
+  override def toString = "$"
+}

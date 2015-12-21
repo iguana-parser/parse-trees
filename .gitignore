@@ -2,9 +2,11 @@
 /target/
 .idea/workspace.xml
 .idea/tasks.xml
-project
+project/project
+project/target
 projectFilesBackup
 .idea_modules
 .cache-main
 .settings
-build.properties
+.classpath
+.project
