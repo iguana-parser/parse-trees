@@ -22,7 +22,6 @@ object SPPFToTerms {
   }
 }
 
-
 class TermBuilderSPPFVisitor(builder: TermBuilder[Any]) extends Visitor[SPPFNode] {
 
   override type T = Any
@@ -31,34 +30,43 @@ class TermBuilderSPPFVisitor(builder: TermBuilder[Any]) extends Visitor[SPPFNode
 
   case class EpsilonList(i: Int)
 
-  override def visit(node: SPPFNode): VisitResult[T] = node match {
+  var root = true
 
-    case TerminalNode(slot, leftExtent, rightExtent, input) =>
-      if (leftExtent == rightExtent) Some(EpsilonList(leftExtent))
-      else Some(builder.terminalTerm(slot.terminalType, leftExtent, rightExtent, input))
+  override def visit(node: SPPFNode): VisitResult[T] = {
 
-    case n@NonterminalNode(slot, child, input) =>
-      if (n.isAmbiguous) {
-        Some(builder.ambiguityTerm(n.children.map(p => makeList(visit(p.leftChild)))))
-      } else {
-        n.slot.nodeType match {
-          case NonterminalNodeType.Layout |
-               NonterminalNodeType.Basic => Some(builder.nonterminalTerm(child.rule, makeList(visit(child.leftChild)), n.leftExtent, n.rightExtent, input))
-          case NonterminalNodeType.Star  => Some(flattenStar(visit(child.leftChild)))
-          case NonterminalNodeType.Plus  => Some(flattenPlus(visit(child.leftChild)))
-          case NonterminalNodeType.Opt   => Some(builder.opt(makeList(visit(child.leftChild)).head))
-          case NonterminalNodeType.Seq   => Some(builder.group(makeList(visit(child.leftChild))))
-          case NonterminalNodeType.Alt   => Some(builder.alt(makeList(visit(child.leftChild))))
+    val root = this.root
+    this.root = false
+
+    node match {
+
+      case TerminalNode(slot, leftExtent, rightExtent, input) =>
+        if (leftExtent == rightExtent) Some(EpsilonList(leftExtent))
+        else Some(builder.terminalTerm(slot.terminalType, leftExtent, rightExtent, input))
+
+      case n@NonterminalNode(slot, child, input) =>
+        if (n.isAmbiguous) {
+          Some(builder.ambiguityTerm(n.children.map(p => makeList(visit(p.leftChild)))))
+        } else {
+          n.slot.nodeType match {
+            case NonterminalNodeType.Layout |
+                 NonterminalNodeType.Basic => Some(builder.nonterminalTerm(child.rule, makeList(visit(child.leftChild)), n.leftExtent, n.rightExtent, input))
+            case NonterminalNodeType.Star => Some(flattenStar(visit(child.leftChild)))
+            case NonterminalNodeType.Plus => Some(flattenPlus(visit(child.leftChild), root))
+            case NonterminalNodeType.Opt => Some(builder.opt(makeList(visit(child.leftChild)).head))
+            case NonterminalNodeType.Seq => Some(builder.group(makeList(visit(child.leftChild))))
+            case NonterminalNodeType.Alt => Some(builder.alt(makeList(visit(child.leftChild))))
+          }
         }
-      }
 
-    case IntermediateNode(slot, leftExtent, rightExtent, children) =>
-      if (children.size > 1) // Ambiguous node
-        Some(builder.ambiguityTerm(children.map(p => merge(p).get)))
-      else
-        merge(children.head)
+      case IntermediateNode(slot, leftExtent, rightExtent, children) =>
+        if (children.size > 1) // Ambiguous node
+          Some(builder.ambiguityTerm(children.map(p => merge(p).get)))
+        else
+          merge(children.head)
 
-    case PackedNode(slot, pivot, leftChild, rightChild) => throw new RuntimeException("Should not come here!")
+      case PackedNode(slot, pivot, leftChild, rightChild) => throw new RuntimeException("Should not come here!")
+
+    }
   }
 
   def makeList(v: Any): Buffer[T] = v match {
@@ -80,9 +88,9 @@ class TermBuilderSPPFVisitor(builder: TermBuilder[Any]) extends Visitor[SPPFNode
     case Some(a: AmbiguityTerm)         => a
   }
 
-  def flattenPlus(child: Any): Any = child match {
+  def flattenPlus(child: Any, root: Boolean = false): Any = child match {
     // A+ ::= A+ A
-    case Some(Buffer(PlusList(l), r@_*)) => PlusList(l ++ r)
+    case Some(Buffer(PlusList(l), r@_*)) => if (root) builder.plus(l ++ r) else PlusList(l ++ r)
 
     // A+ ::= A
     case Some(l: Buffer[Any]) => PlusList(l)

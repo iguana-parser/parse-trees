@@ -18,8 +18,10 @@ object TerminalNodeType {
 
   type TerminalNodeType = Int
 
-  val Regular = 0
-  val Layout = 1
+  val Literal = 0
+  val Regex = 1
+  val Layout = 2
+  val Keyword = 3
 }
 
 import NonterminalNodeType._
