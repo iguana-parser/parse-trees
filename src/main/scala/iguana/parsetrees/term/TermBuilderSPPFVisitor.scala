@@ -93,9 +93,9 @@ class TermBuilderSPPFVisitor(builder: TermBuilder[Any]) extends Visitor[SPPFNode
     case Some(Buffer(PlusList(l), r@_*)) => if (root) builder.plus(l ++ r) else PlusList(l ++ r)
 
     // A+ ::= A
-    case Some(l: Buffer[Any]) => PlusList(l)
+    case Some(l: Buffer[Any]) => if (root) builder.plus(l) else PlusList(l)
 
-    case Some(x) => PlusList(Buffer(x))
+    case Some(x) => if (root) builder.plus(Buffer(x)) else PlusList(Buffer(x))
   }
 
   /**
