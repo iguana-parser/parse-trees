@@ -93,9 +93,9 @@ class TermBuilderSPPFVisitor[U](builder: TermBuilder[U]) extends Visitor[SPPFNod
     case Some(Buffer(PlusList(l), r@_*)) => if (root) builder.plus((l ++ r).asInstanceOf[Seq[U]]) else PlusList(l ++ r)
 
     // A+ ::= A
-    case Some(l: Buffer[Any]) => if (root) builder.plus(l) else PlusList(l)
+    case Some(l: Buffer[Any]) => if (root) builder.plus(l.asInstanceOf[Seq[U]]) else PlusList(l)
 
-    case Some(x) => if (root) builder.plus(Buffer(x)) else PlusList(Buffer(x))
+    case Some(x) => if (root) builder.plus(Buffer(x).asInstanceOf[Seq[U]]) else PlusList(Buffer(x))
   }
 
   /**
