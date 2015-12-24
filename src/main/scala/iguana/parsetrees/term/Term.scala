@@ -13,9 +13,9 @@ trait Term {
 }
 
 object TermFactory {
-  def createRule(ruleType: RuleType, children: java.util.List[Term], input: Input) = NonterminalTerm(ruleType, children.asScala, input)
-  def createAmbiguity(children: java.util.List[java.util.List[Term]]) = AmbiguityTerm(asScala(children))
-  def createTerminal(terminalType: TerminalType, leftExtent: Int, rightExtent:Int, input: Input) = TerminalTerm(terminalType, leftExtent, rightExtent, input)
+  def createNonterminalTerm(ruleType: RuleType, children: java.util.List[Term], input: Input) = NonterminalTerm(ruleType, children.asScala, input)
+  def createAmbiguityTerm(children: java.util.List[java.util.List[Term]]) = AmbiguityTerm(asScala(children))
+  def createTerminalTerm(terminalType: TerminalType, leftExtent: Int, rightExtent:Int, input: Input) = TerminalTerm(terminalType, leftExtent, rightExtent, input)
   def createEpsilon(i: Int) = Epsilon(i)
   def createCycle(label: String) = Cycle(label)
   def createStar(children: java.util.List[Term]) = Star(children.asScala)
