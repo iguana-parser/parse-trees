@@ -5,8 +5,6 @@ organization := "iguana"
 
 version := "0.1.0"
 
-isSnapshot := true 
-
 scalaVersion := "2.11.7"
 
 parallelExecution in Test := false
@@ -17,6 +15,6 @@ libraryDependencies ++= Seq(
   "commons-cli" % "commons-cli" % "1.2"
 )
 
-lazy val utils = ProjectRef(file("../utils"), "utils")
+lazy val utils = ProjectRef(uri("https://github.com/iguana-parser/utils.git"), "utils")
 
 val main = Project(id = "parse-trees", base = file(".")).dependsOn(utils)
