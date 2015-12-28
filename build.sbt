@@ -15,6 +15,8 @@ libraryDependencies ++= Seq(
   "commons-cli" % "commons-cli" % "1.2"
 )
 
-lazy val utils = ProjectRef(uri("https://github.com/iguana-parser/utils.git"), "utils")
-
 val main = Project(id = "parse-trees", base = file(".")).dependsOn(utils)
+
+lazy val utils = if (file("../utils").exists) ProjectRef(file("../utils"), "utils")
+                 else ProjectRef(uri("https://github.com/iguana-parser/utils.git"), "utils")
+
