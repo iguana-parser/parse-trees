@@ -81,7 +81,7 @@ private class ToJavaCode extends Visitor[Term] with Id {
   }
 
   def getBranch(b: AmbiguityBranch[Term]): String =  b match {
-    case NonterminalAmbiguityBranch(rt, children) => {
+    case NonterminalAmbiguityBranch(rt, children, input) => {
       val childrenList = "list(" + children.map(c => "t" + getId(c)).mkString(", ") + ")"
       s"""createNonterminalAmbiguityBranch($rt, $childrenList)"""
     }
