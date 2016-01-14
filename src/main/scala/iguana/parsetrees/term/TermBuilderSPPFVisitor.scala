@@ -4,15 +4,16 @@ import iguana.parsetrees.slot.NonterminalNodeType
 import iguana.parsetrees.sppf._
 import iguana.parsetrees.visitor._
 
+import scala.annotation.tailrec
 import scala.collection.mutable.Buffer
 
 object SPPFToTerms {
 
-  def convert[T](node: SPPFNode, builder: TermBuilder[T]): T
-    = convert(node, builder, new TermBuilderSPPFVisitor(builder) with SPPFMemoization);
+  def convert[T](node: SPPFNode, builder: TermBuilder[T]): T =
+    convert(node, builder, new TermBuilderSPPFVisitor(builder) with SPPFMemoization)
 
-  def convertNoSharing[T](node: SPPFNode, builder: TermBuilder[T]): T
-    = convert(node, builder, new TermBuilderSPPFVisitor(builder));
+  def convertNoSharing[T](node: SPPFNode, builder: TermBuilder[T]): T =
+    convert(node, builder, new TermBuilderSPPFVisitor(builder))
 
   private def convert[T](node: SPPFNode, builder: TermBuilder[T], visitor: TermBuilderSPPFVisitor[T]): T =  {
     visitor.visit(node) match {
@@ -45,22 +46,22 @@ class TermBuilderSPPFVisitor[U](builder: TermBuilder[U]) extends Visitor[SPPFNod
 
       case n@NonterminalNode(slot, child, input) =>
         if (n.isAmbiguous) {
-          Some(builder.ambiguityTerm(n.children.map(p => makeList(visit(p.leftChild)).asInstanceOf[Seq[U]])))
+          Some(builder.ambiguityTerm(n.children.map(p => builder.nonterminalAmbiguityBranch(p.rule, makeList(visit(p.leftChild)).asInstanceOf[Seq[U]], input))))
         } else {
           n.slot.nodeType match {
             case NonterminalNodeType.Layout |
                  NonterminalNodeType.Basic => Some(builder.nonterminalTerm(child.rule, makeList(visit(child.leftChild)).asInstanceOf[Seq[U]], n.leftExtent, n.rightExtent, input))
-            case NonterminalNodeType.Star => Some(flattenStar(visit(child.leftChild)))
-            case NonterminalNodeType.Plus => Some(flattenPlus(visit(child.leftChild), root))
-            case NonterminalNodeType.Opt => Some(builder.opt(makeList(visit(child.leftChild)).head.asInstanceOf[U]))
-            case NonterminalNodeType.Seq => Some(builder.group(makeList(visit(child.leftChild)).asInstanceOf[Seq[U]]))
-            case NonterminalNodeType.Alt => Some(builder.alt(makeList(visit(child.leftChild)).asInstanceOf[Seq[U]]))
+            case NonterminalNodeType.Star  => Some(flattenStar(visit(child.leftChild)))
+            case NonterminalNodeType.Plus  => Some(flattenPlus(visit(child.leftChild), root))
+            case NonterminalNodeType.Opt   => Some(builder.opt(makeList(visit(child.leftChild)).head.asInstanceOf[U]))
+            case NonterminalNodeType.Seq   => Some(builder.group(makeList(visit(child.leftChild)).asInstanceOf[Seq[U]]))
+            case NonterminalNodeType.Alt   => Some(builder.alt(makeList(visit(child.leftChild)).asInstanceOf[Seq[U]]))
           }
         }
 
       case IntermediateNode(slot, leftExtent, rightExtent, children) =>
         if (children.size > 1) // Ambiguous node
-          Some(builder.ambiguityTerm(children.map(p => merge(p).get.asInstanceOf[Seq[U]])))
+          Some(builder.ambiguityTerm(children.map(p => builder.intermediateAmbiguityBranch(merge(p).get.asInstanceOf[Seq[U]]))))
         else
           merge(children.head)
 
@@ -70,7 +71,7 @@ class TermBuilderSPPFVisitor[U](builder: TermBuilder[U]) extends Visitor[SPPFNod
   }
 
   def makeList(v: Any): Buffer[T] = v match {
-    case Unknown(label) => Buffer(builder.cycle(label))
+    case Unknown(node) => Buffer(builder.cycle(node))
     case None => Buffer()
     case Some(EpsilonList(i)) => Buffer(builder.epsilon(i))
     case Some(PlusList(Buffer(PlusList(l), r@_*))) => Buffer(builder.plus((l ++ r).asInstanceOf[Seq[U]]))
@@ -120,8 +121,8 @@ class TermBuilderSPPFVisitor[U](builder: TermBuilder[U]) extends Visitor[SPPFNod
     Some(merge(left, right))
   }
 
-
-  def merge(x: Any, y: Any): Buffer[Any] = (x, y) match {
+  @tailrec
+  private def merge(x: Any, y: Any): Buffer[Any] = (x, y) match {
       case (None, None) => Buffer()
       case (None, y)    => Buffer(y)
       case (x, None)    => Buffer(x)

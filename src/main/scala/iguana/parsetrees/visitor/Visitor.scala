@@ -64,9 +64,10 @@ case object None extends VisitResult[Nothing] {
   override def isDefined: Boolean = false
 }
 
-case class Unknown(label: String) extends VisitResult[Nothing] {
+case class Unknown(node: Any) extends VisitResult[Nothing] {
   override def get: Nothing = throw new NoSuchElementException
   override def isDefined: Boolean = false
+  def getNode: Any = node
 }
 
 trait Id {
@@ -90,7 +91,7 @@ trait SPPFMemoization extends Visitor[SPPFNode] {
 
       case n: NonterminalNode => {
         if (!cache.contains(node)) {
-          cache.put(node, Unknown(n.slot.toString))
+          cache.put(node, Unknown(n))
           val v = super.visit(node)
           cache.put(node, v)
           return v

@@ -44,7 +44,7 @@ class SPPFToDot extends Visitor[SPPFNode] with Id {
       case n@NonterminalNode(slot, child, input) =>
         val color = if (n.isAmbiguous) "red" else "black"
         sb ++= s"""${getId(node)}""" + ROUNDED_RECTANGLE.format(color, escape(slot) + "," + n.leftExtent + "," + n.rightExtent) + "\n"
-        visit(child).flatMap(id => addEdge(n, id))
+        addEdge(n, for (c <- n.children; x <- visit(c).toSeq; y <- x) yield y)
 
       case n@IntermediateNode(name, leftExtent, rightExtent, children) =>
         val color = if (n.isAmbiguous) "red" else "black"
@@ -60,10 +60,25 @@ class SPPFToDot extends Visitor[SPPFNode] with Id {
 
       case n@PackedNode(name, pivot, leftChild, rightChild) =>
         sb ++= s"""${getId(node)}""" + CIRCLE.format("black", "","") + "\n"
-        val l = visit(leftChild).flatMap(id => addEdge(n, id)).toSeq.flatten
-        val r = (if (rightChild != null) visit(rightChild).flatMap(id => addEdge(n, id)) else None).toSeq.flatten
-        Some(l ++ r)
+        val left = getPackedNodeChild(leftChild)
+        val right = getPackedNodeChild(rightChild)
+        addEdge(n, left ++ right)
     }
+
+  def getPackedNodeChild(n: NonPackedNode): Seq[Int] =
+    if (n == null) Buffer()
+    else visit(n) match {
+        case Unknown(x) => Buffer(getId(x.asInstanceOf[NonterminalNode]))
+        case Some(l)    => l
+        case _          => Buffer()
+    }
+
+  //    if (n != null )
+//      visit(n) match {
+//      case Unknown(x) => Buffer(getId(x.asInstanceOf[NonterminalNode]))
+//      case l => l.flatMap(id => addEdge(n, id)).toSeq.flatten
+//    }
+//    else Buffer()
 
   def addEdge(node: SPPFNode, childrenIds: Seq[Int]): VisitResult[Seq[Int]] = {
     if (!childrenIds.isEmpty)

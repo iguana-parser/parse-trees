@@ -1,44 +1,48 @@
 package iguana.parsetrees.term
 
 import iguana.parsetrees.slot.TerminalNodeType
+import iguana.parsetrees.sppf.NonterminalNode
 import iguana.utils.input.Input
+import Utils._
 
 import scala.collection.JavaConverters._
 
-trait Term {
+trait Term extends Product {
   def leftExtent: Int
   def rightExtent: Int
 
+  /**
+    * For visualization purpose it is desirable keep the default equality intact, i.e.,
+    * using object references.
+    */
   def equals(t: Term): Boolean
 }
 
-object TermFactory {
-  def createNonterminalTerm(ruleType: RuleType, children: java.util.List[Term], input: Input) = NonterminalTerm(ruleType, children.asScala, input)
-  def createAmbiguityTerm(children: java.util.List[java.util.List[Term]]) = AmbiguityTerm(asScala(children))
-  def createTerminalTerm(terminalType: TerminalType, leftExtent: Int, rightExtent:Int, input: Input) = TerminalTerm(terminalType, leftExtent, rightExtent, input)
-  def createEpsilon(i: Int) = Epsilon(i)
-  def createCycle(label: String) = Cycle(label)
-  def createStar(children: java.util.List[Term]) = Star(children.asScala)
-  def createPlus(children: java.util.List[Term]) = Plus(children.asScala)
-  def createGroup(children: java.util.List[Term]) = Group(children.asScala)
-  def createAlt(children: java.util.List[Term]) = Alt(children.asScala)
-  def createOpt(child: Term) = Opt(child)
-
-  def asScala[T](list: java.util.List[java.util.List[T]]): Seq[Seq[T]] = list.asScala.map(x => x.asScala)
-}
-
-class NonterminalTerm(val r: RuleType, val ts: Seq[Term], val input: Input) extends Term {
+class NonterminalTerm(val r: RuleType,
+                      val ts: Seq[Term],
+                      val input: Input) extends Term{
   override def leftExtent= ts.head.leftExtent
   override def rightExtent = ts.last.rightExtent
   def isLayout: Boolean = r.layout
 
   override def equals(t: Term): Boolean =  t match {
     case n: NonterminalTerm => leftExtent == n.leftExtent &&
-                        rightExtent == n.rightExtent &&
-                        r.head  == n.r.head &&
-                        ts.zip(n.ts).forall { case (t1, t2) => t1 equals t2 }
+      rightExtent == n.rightExtent &&
+      r.head  == n.r.head &&
+      ts.zip(n.ts).forall { case (t1, t2) => t1 equals t2 }
     case _           => false
   }
+
+  override def productElement(n: Int): Any = n match {
+    case 0 => r
+    case 1 => ts
+    case 2 => input
+    case _ => throw new IndexOutOfBoundsException(n.toString)
+  }
+
+  override def productArity: Int = 3
+
+  override def canEqual(that: Any): Boolean = this.isInstanceOf[NonterminalTerm]
 }
 
 object NonterminalTerm {
@@ -46,60 +50,83 @@ object NonterminalTerm {
   def unapply(r: NonterminalTerm): Option[(RuleType, Seq[Term], Input)] = Some(r.r, r.ts, r.input)
 }
 
-object NT {
-  def unapply(nt: NonterminalTerm): Option[(String, Seq[Term])] =
-    Some(nt.r.head, nt.ts.filter {
-                                case n: NonterminalTerm => !n.isLayout
-                                case t: TerminalTerm    => !t.isLayout
-                               })
+object NonterminalTermNoLayout {
+  def unapply(nt: NonterminalTerm): Option[(String, Seq[Term])] = Some(nt.r.head, noLayout(nt.ts))
 }
 
-object NTL {
-  def unapply(nt: NonterminalTerm): Option[(String, Seq[Term])] = Some(nt.r.head, nt.ts)
+object SeqNoLayout {
+  def unapplySeq(l: Seq[Term]): Option[Seq[Term]] = Some(noLayout(l))
 }
 
+object NonterminalTermName {
+  def unapply(nt: NonterminalTerm): Option[String] = Some(nt.r.head)
+}
 
-class AmbiguityTerm(val ts: Seq[Seq[Term]]) extends Term {
-  override def leftExtent: Int = ts.head.head.leftExtent
-  override def rightExtent: Int = ts.head.last.rightExtent
+class AmbiguityTerm(val ts: Seq[AmbiguityBranch[Term]]) extends Term with TermListProduct {
+  override def leftExtent: Int = ts.head.leftExtent
+  override def rightExtent: Int = ts.last.rightExtent
 
   override def equals(t: Term): Boolean = t match {
-    case a: AmbiguityTerm => leftExtent == a.leftExtent &&
-                   rightExtent == a.rightExtent &&
-                   ts.zip(a.ts).forall { case (t1, t2) => t1.zip(t2).forall { case (z1, z2) => z1 equals z2 } }
-    case _      => false
+    case a: AmbiguityTerm =>
+      leftExtent  == a.leftExtent &&
+      rightExtent == a.rightExtent &&
+      ts.zip(a.ts).forall { case (b1, b2) => b1.children.zip(b2.children).forall { case (t1, t2) => t1 equals t2 } }
+    case _ => false
   }
 }
 
 object AmbiguityTerm {
-  def apply(ts: Seq[Seq[Term]]) = new AmbiguityTerm(ts)
-  def unapply(a: AmbiguityTerm): Option[Seq[Seq[Term]]] = Some(a.ts)
+  def apply(ts: Seq[AmbiguityBranch[Term]]) = new AmbiguityTerm(ts)
+  def unapply(a: AmbiguityTerm): Option[Seq[AmbiguityBranch[Term]]] = Some(a.ts)
 }
 
-class TerminalTerm(val tt: TerminalType, val leftExtent: Int, val rightExtent: Int, val input: Input) extends Term {
+case class NonterminalAmbiguityBranch(val rt: RuleType, val children: Seq[Term], val input: Input) extends AmbiguityBranch[Term] {
+  override def leftExtent: Int = children.head.leftExtent
+  override def rightExtent: Int = children.last.rightExtent
+}
+
+case class IntermediateAmbiguityBranch(val children: Seq[Term]) extends AmbiguityBranch[Term] {
+  override def leftExtent: Int = children.head.leftExtent
+  override def rightExtent: Int = children.last.rightExtent
+}
+
+class TerminalTerm(val tt: TerminalType,
+                   val leftExtent: Int,
+                   val rightExtent: Int,
+                   val input: Input) extends Term with Product {
+
   def isLayout: Boolean = tt.nodeType == TerminalNodeType.Layout
 
   override def equals(t: Term): Boolean = t match {
     case t:TerminalTerm => leftExtent == t.leftExtent &&
-                       rightExtent == t.rightExtent &&
-                       tt == t.tt
+      rightExtent == t.rightExtent &&
+      tt == t.tt
     case _          => false
   }
+
+  override def productElement(n: Int): Any = n match {
+    case 0 => tt
+    case 1 => leftExtent
+    case 2 => rightExtent
+    case 3 => input
+    case _ => throw new IndexOutOfBoundsException(n.toString)
+  }
+  override def productArity: Int = 4
+  override def canEqual(that: Any): Boolean = this.isInstanceOf[TerminalTerm]
 }
 
 object TerminalTerm {
-
   def apply(tt: TerminalType, leftExtent: Int, rightExtent: Int, input: Input) =
     new TerminalTerm(tt, leftExtent, rightExtent, input)
 
   def unapply(t: TerminalTerm): Option[(TerminalType, Int, Int, Input)] = Some(t.tt, t.leftExtent, t.rightExtent, t.input)
 }
 
-object TT {
+object TerminalTermName {
   def unapply(tt: TerminalTerm): Option[String] = Some(tt.tt.name)
 }
 
-class Epsilon(val i: Int) extends Term {
+class Epsilon(val i: Int) extends Term with Product {
   override def leftExtent = i
   override def rightExtent = i
 
@@ -107,6 +134,10 @@ class Epsilon(val i: Int) extends Term {
     case e: Epsilon => i == e.i
     case _          => false
   }
+
+  override def productElement(n: Int): Any = i
+  override def productArity: Int = 1
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[Epsilon]
 }
 
 object Epsilon {
@@ -114,67 +145,62 @@ object Epsilon {
   def unapply(e: Epsilon): Option[Int] = Some(e.i)
 }
 
-class Cycle(val label: String) extends Term {
+case class Cycle(node: NonterminalNode) extends Term {
   override def leftExtent = -1
   override def rightExtent = -1
 
   override def equals(t: Term): Boolean = t match {
-    case c:Cycle => label == c.label
+    case c:Cycle => node deepEquals c.node
     case _       => false
   }
 }
 
-object Cycle {
-  def apply(label: String) = new Cycle(label)
-  def unapply(c: Cycle): Option[String] = Some(c.label)
-}
-
-class Star(val children: Seq[Term]) extends Term {
-  override def leftExtent = children.head.leftExtent
-  override def rightExtent = children.last.rightExtent
+class Star(val ts: Seq[Term]) extends Term with TermListProduct {
+  override def leftExtent = ts.head.leftExtent
+  override def rightExtent = ts.last.rightExtent
 
   override def equals(t: Term): Boolean = t match {
-    case s:Star => children.zip(s.children).forall { case (t1, t2) => t1 equals t2 }
+    case s:Star => ts.zip(s.ts).forall { case (t1, t2) => t1 equals t2 }
     case _      => false
   }
 }
 
 object Star {
   def apply(children: Seq[Term]) = new Star(children)
-  def unapply(s: Star): Option[Seq[Term]] = Some(s.children)
+  def unapply(s: Star): Option[Seq[Term]] = Some(s.ts)
 }
 
-class Plus(val children: Seq[Term]) extends Term {
-  override def leftExtent = children.head.leftExtent
-  override def rightExtent = children.last.rightExtent
+class Plus(val ts: Seq[Term]) extends Term with TermListProduct {
+  override def leftExtent = ts.head.leftExtent
+  override def rightExtent = ts.last.rightExtent
 
   override def equals(t: Term): Boolean = t match {
-    case p:Plus => children.zip(p.children).forall { case (t1, t2) => t1 equals t2 }
+    case p:Plus => ts.zip(p.ts).forall { case (t1, t2) => t1 equals t2 }
     case _      => false
   }
 }
 
 object Plus {
   def apply(children: Seq[Term]) = new Plus(children)
-  def unapply(p: Plus): Option[Seq[Term]] = Some(p.children)
+  def unapply(p: Plus): Option[Seq[Term]] = Some(p.ts)
 }
 
-class Group(val children: Seq[Term]) extends Term {
-  override def leftExtent = children.head.leftExtent
-  override def rightExtent = children.last.rightExtent
+class Group(val ts: Seq[Term]) extends Term with TermListProduct {
+  override def leftExtent = ts.head.leftExtent
+  override def rightExtent = ts.last.rightExtent
 
   override def equals(t: Term): Boolean = t match {
-    case g:Group => children.zip(g.children).forall { case (t1, t2) => t1 equals t2 }
+    case g:Group => ts.zip(g.ts).forall { case (t1, t2) => t1 equals t2 }
     case _      => false
   }
 }
 
 object Group {
-  def apply(children: Seq[Term]) = new Group(children)
-  def unapply(g: Group): Option[Seq[Term]] = Some(g.children)
+  def apply(ts: Seq[Term]) = new Group(ts)
+  def unapply(g: Group): Option[Seq[Term]] = Some(g.ts)
 }
 
-class Opt(val child: Term) extends Term {
+class Opt(val child: Term) extends Term with TermProduct {
   override def leftExtent = child.leftExtent
   override def rightExtent = child.rightExtent
 
@@ -189,18 +215,55 @@ object Opt {
   def unapply(o: Opt): Option[Term] = Some(o.child)
 }
 
-class Alt(val children: Seq[Term]) extends Term {
-  override def leftExtent = children.head.leftExtent
-  override def rightExtent = children.last.rightExtent
+class Alt(val ts: Seq[Term]) extends Term with TermListProduct {
+  override def leftExtent = ts.head.leftExtent
+  override def rightExtent = ts.last.rightExtent
 
   override def equals(t: Term): Boolean = t match {
-    case a:Alt => children.zip(a.children).forall { case (t1, t2) => t1 equals t2 }
+    case a:Alt => ts.zip(a.ts).forall { case (t1, t2) => t1 equals t2 }
     case _      => false
   }
 }
 
 object Alt {
   def apply(children: Seq[Term]) = new Alt(children)
-  def unapply(a: Alt): Option[Seq[Term]] = Some(a.children)
+  def unapply(a: Alt): Option[Seq[Term]] = Some(a.ts)
 }
 
+/**
+  * Factory object for creating terms from Java
+  */
+object TermFactory {
+  def createNonterminalTerm(ruleType: RuleType, children: java.util.List[Term], input: Input) = NonterminalTerm(ruleType, children.asScala, input)
+  def createAmbiguityTerm(children: java.util.List[AmbiguityBranch[Term]]) = AmbiguityTerm(children.asScala)
+  def createNonterminalAmbiguityBranch(ruleType: RuleType, children: java.util.List[Term], input: Input) = NonterminalAmbiguityBranch(ruleType, children.asScala, input)
+  def createIntermediateAmbiguityBranch(children: java.util.List[Term]) = IntermediateAmbiguityBranch(children.asScala)
+  def createTerminalTerm(terminalType: TerminalType, leftExtent: Int, rightExtent:Int, input: Input) = TerminalTerm(terminalType, leftExtent, rightExtent, input)
+  def createEpsilon(i: Int) = Epsilon(i)
+  def createCycle(a: NonterminalNode) = Cycle(a)
+  def createStar(children: java.util.List[Term]) = Star(children.asScala)
+  def createPlus(children: java.util.List[Term]) = Plus(children.asScala)
+  def createGroup(children: java.util.List[Term]) = Group(children.asScala)
+  def createAlt(children: java.util.List[Term]) = Alt(children.asScala)
+  def createOpt(child: Term) = Opt(child)
+}
+
+object Utils {
+
+  trait TermListProduct extends Product1[Seq[Any]] {
+    def ts: Seq[Any]
+    override def _1: Seq[Any] = ts
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[TermListProduct]
+  }
+
+  trait TermProduct extends Product1[Term] {
+    def child: Term
+    override def _1: Term = child
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[TermProduct]
+  }
+
+  def noLayout(l: Seq[Term]): Seq[Term] = l.filter {
+    case n: NonterminalTerm => !n.isLayout
+    case t: TerminalTerm => !t.isLayout
+  }
+}

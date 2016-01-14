@@ -38,9 +38,11 @@ class TermToDot extends Visitor[Term] with Id {
 
   override def visit(node: Term): VisitResult[T] = node match {
 
-    case TerminalTerm(name, i, j, input) =>
+    case TerminalTerm(tt, i, j, input) =>
       val id = getId(node)
-      sb ++= s"$id ${ROUNDED_RECTANGLE.format("black", escape(input.subString(i, j)))}\n"
+      val label = if (tt.name == input.subString(i, j)) s"'${tt.name}'"
+                  else tt.name + " ('" + escape(input.subString(i, j)) + "')"
+      sb ++= s"$id ${ROUNDED_RECTANGLE.format("black", label)}\n"
       Some(Buffer(id))
 
     case NonterminalTerm(r, children, input) =>
@@ -90,9 +92,9 @@ class TermToDot extends Visitor[Term] with Id {
 
   }
 
-  def getBranch(b: Seq[Term]): VisitResult[Seq[Int]] = {
+  def getBranch(b: AmbiguityBranch[Term]): VisitResult[Seq[Int]] = {
     sb ++= s"${getId(b)} ${CIRCLE.format("black", "", "")}\n"
-    val ids = for (c <- b; x <- visit(c).toSeq; i <- x) yield i
+    val ids = for (c <- b.children; x <- visit(c).toSeq; i <- x) yield i
     addEdge(b, ids)
   }
 

@@ -150,11 +150,9 @@ object NonterminalNode {
 
     if (value == null) new NonterminalNode(head, packedNode, input)
     else new NonterminalNode(head, packedNode, input) { override def getValue = value }
-
   }
 
-  def unapply(n: NonterminalNode): Option[(NonterminalSlot, PackedNode, Input)]
-    = Some((n.slot, n.child, n.input))
+  def unapply(n: NonterminalNode): Option[(NonterminalSlot, PackedNode, Input)] = Some((n.slot, n.child, n.input))
 
 }
 
@@ -237,7 +235,6 @@ trait PackedNode extends SPPFNode {
 }
 
 object PackedNode {
-
   def apply(s: PackedNodeSlot, l: NonPackedNode, r: NonPackedNode): PackedNode =
     new PackedNode { override def leftChild = l; override def rightChild = r; override def slot = s }
 
@@ -246,5 +243,4 @@ object PackedNode {
 
   def unapply(n: PackedNode): Option[(Any, Int, NonPackedNode, NonPackedNode)] =
     Some((n.slot, n.pivot, n.leftChild, n.rightChild))
-
 }
