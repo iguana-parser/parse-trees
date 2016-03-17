@@ -43,9 +43,8 @@ object TermTraversal {
         =>
            if (ns.size == 1) return build(ns.head, b);
            val x = skip(buildL(ns, b))
-           if (x.size() == 1) return x.get(0)
-           else
-             throw new RuntimeException("This rule should have a label: " + t)
+           if (x.size == 1) return x(0)
+           return x
 
       case NonterminalTerm(t, ns, _) if (t.label != null && !t.label.isEmpty)
         =>
@@ -55,8 +54,15 @@ object TermTraversal {
              val x = buildL(ns, b)
              val fm = b.getClass.getMethod(t.head.toLowerCase(), asScalaBuffer(new java.util.ArrayList[Class[_]]):_*)
              refArrayOps(fm.invoke(null).getClass.getMethods) foreach { m =>
-               if (m.getName.equals(t.label.toLowerCase)) return invokeMethod(m, x, t.head, t.label) }
-             throw new RuntimeException(composeErrorMsg(t.head, t.label, x))
+               if (m.getName.equals(t.label.toLowerCase)) 
+                 try
+                   return invokeMethod(m, x, t.head, t.label)
+                 catch { 
+                   case e: IllegalArgumentException =>
+                   case e: InvocationTargetException =>
+                 }
+             }
+             throw new IllegalArgumentException(composeErrorMsg(t.head, t.label, x))
            }
       case Star(ns)  => skip(buildL(ns, b, flatten = true))
       case Plus(ns)  => skip(buildL(ns, b, flatten = true))
@@ -84,26 +90,26 @@ object TermTraversal {
     * Skips layout and flattens immediate list children
     */
   def buildL(children: Seq[Term], b: Actions, flatten: Boolean = false) = {
+    val builder = new scala.collection.mutable.ListBuffer[Object]
     val result = new java.util.ArrayList[Object];
     children foreach { child =>
       if (!isLayout(child)) {
         val x = build(child, b)
-        if (x.isInstanceOf[java.util.List[_]] && flatten)
-          result.addAll(x.asInstanceOf[java.util.List[Object]])
+        if (x.isInstanceOf[List[_]] && flatten)
+          builder ++= x.asInstanceOf[List[Object]]
         else
-          result.add(x)
+          builder += x
       }
     }
-    result
+    builder.toList
   }
 
   /**
     * Skips terminals unless there are only terminals in the list
     */
-  def skip(l: java.util.List[Object]): java.util.List[Object] = {
-    if (l.isEmpty() || l.size() == 1) return l
-    val x = new java.util.ArrayList[Object]
-    asScalaBuffer(l) foreach { elem => if (!elem.isInstanceOf[java.lang.String]) x.add(elem) }
+  def skip(l: List[Object]): List[Object] = {
+    if (l.isEmpty || l.size == 1) return l
+    val x = l filter {!_.isInstanceOf[String]}
     if (x.isEmpty) return l;
     x
   }
@@ -124,42 +130,42 @@ object TermTraversal {
     *       following the order of parameters and their declared types; if a terminal is expected, pass it,
     *       otherwise skip it; one special case of trailing terminals in the argument list has to be taken care of
     */
-  def invokeMethod(m: java.lang.reflect.Method, args: java.util.List[Object], head: String, label: String): Object = {
-    if (m.getParameterCount == args.size()) {
-      try
-        return m.invoke(null, args: _*)
-      catch {
-        case e: IllegalArgumentException => throw new RuntimeException(composeErrorMsg(head, label, args))
-        case e: IllegalAccessException => throw e
-        case e: InvocationTargetException => throw e.getTargetException
-      }
-    } else {
+  def invokeMethod(m: java.lang.reflect.Method, args: List[Object], head: String, label: String): Object = {
+    if (m.getParameterCount == args.size)
+      return m.invoke(null, args: _*)
+    else {
       val types = m.getParameterTypes;
-      if (types.length > args.size()) throw new RuntimeException(composeErrorMsg(head, label, args))
-      val y = new java.util.ArrayList[Object]
+      
+      if (types.length > args.size) 
+        throw new IllegalArgumentException(composeErrorMsg(head, label, args))
+      
+      val y = new scala.collection.mutable.ListBuffer[Object]
       var i = 0
       var len = args.size
-      asScalaBuffer(args) foreach { elem =>
-        if (i > types.length) throw new RuntimeException(composeErrorMsg(head, label, args))
-        if (elem.isInstanceOf[java.lang.String] && (types.apply(i) != elem.getClass) || i == types.length) {
+      
+      args foreach { elem =>
+        
+        if (i > types.length) 
+          throw new IllegalArgumentException(composeErrorMsg(head, label, args))
+        
+        if (elem.isInstanceOf[java.lang.String] && (types(i) != elem.getClass) || i == types.length) {
           len -= 1;
-          if (len < types.length) throw new RuntimeException(composeErrorMsg(head, label, args))
+          if (len < types.length) 
+            throw new IllegalArgumentException(composeErrorMsg(head, label, args))
         } else {
-          y.add(elem)
+          y += elem
           i += 1
         }
       }
-      if (y.size != types.length) throw new RuntimeException(composeErrorMsg(head, label, args))
-      try
-        return m.invoke(null, y: _*)
-      catch {
-        case e: IllegalArgumentException => throw new RuntimeException(composeErrorMsg(head, label, args))
-        case e: InvocationTargetException => throw e.getTargetException
-      }
+      
+      if (y.size != types.length) 
+        throw new IllegalArgumentException(composeErrorMsg(head, label, args))
+      
+      return m.invoke(null, y: _*)
     }
   }
 
-  def composeErrorMsg(head: String, label: String, args: java.util.List[Object])
+  def composeErrorMsg(head: String, label: String, args: List[Object])
     = "The matching method has not been found: $head . ${label.toLowerCase} (${args.foldLeft(\"\") {(a,el) => a + \",\" + el.getClass.getName}})"
   
 }
